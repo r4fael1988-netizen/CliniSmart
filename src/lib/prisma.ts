@@ -1,4 +1,6 @@
+// CliniSmart Database Connection Singleton - Last Updated: 2026-04-08
 import { PrismaClient } from '@prisma/client'
+
 
 const prismaClientSingleton = () => {
   return new PrismaClient()
@@ -10,6 +12,9 @@ declare global {
 
 const prisma = globalThis.prisma ?? prismaClientSingleton()
 
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.prisma = prisma
+}
+
 export default prisma
 
-if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma
