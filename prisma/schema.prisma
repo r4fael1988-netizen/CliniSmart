@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Clinic {
+  id                    String    @id @default(uuid())
+  name                  String
+  slug                  String    @unique
+  logoUrl               String?
+  planStatus            String    @default("active")
+  subscriptionEndsAt    DateTime?
+  whatsappInstance      String?
+  settings              Json      @default("{}")
+  createdAt             DateTime  @default(now())
+  
+  users         User[]
+  patients      Patient[]
+  appointments  Appointment[]
+  conversations Conversation[]
+  interactions  Interaction[]
+  doctors       Doctor[]
+  services      Service[]
+}
+
+model User {
+  id              String    @id @default(uuid())
+  clinicId        String
+  name            String
+  email           String    @unique
+  passwordHash    String
+  role            String    @default("receptionist")
+  avatarUrl       String?
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  
+  clinic          Clinic    @relation(fields: [clinicId], references: [id])
+}
+
+model Patient {
+  id            String    @id @default(uuid())
+  clinicId      String
+  fullName      String
+  phone         String
+  email         String?
+  birthDate     DateTime?
+  cpf           String?
+  healthPlan    String?
+  source        String    @default("whatsapp")
+  status        String    @default("new_contact")
+  priority      String    @default("normal")
+  stageEnteredAt DateTime @default(now())
+  assignedTo    String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  clinic        Clinic    @relation(fields: [clinicId], references: [id])
+  appointments  Appointment[]
+  interactions  Interaction[]
+  conversations Conversation[]
+  
+  @@unique([clinicId, phone])
+}
+
+model Doctor {
+  id              String    @id @default(uuid())
+  clinicId        String
+  name            String
+  specialty       String
+  crm             String?
+  schedule        Json      @default("{}")
+  slotDurationMin Int       @default(30)
+  isActive        Boolean   @default(true)
+  
+  clinic          Clinic    @relation(fields: [clinicId], references: [id])
+  appointments    Appointment[]
+}
+
+model Appointment {
+  id                String    @id @default(uuid())
+  clinicId          String
+  patientId         String
+  doctorId          String?
+  serviceId         String?
+  specialty         String
+  scheduledAt       DateTime
+  durationMinutes   Int       @default(30)
+  status            String    @default("scheduled")
+  appointmentType   String    @default("consultation")
+  value             Decimal?
+  notes             String?
+  reminder24hSent   Boolean   @default(false)
+  reminder2hSent    Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  clinic            Clinic    @relation(fields: [clinicId], references: [id])
+  patient           Patient   @relation(fields: [patientId], references: [id])
+  doctor            Doctor?   @relation(fields: [doctorId], references: [id])
+  service           Service?  @relation(fields: [serviceId], references: [id])
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  clinicId        String
+  patientId       String?
+  phoneNumber     String
+  whatsappInstance String
+  status          String    @default("active")
+  stage           String    @default("greeting")
+  context         Json      @default("[]")
+  collectedData   Json      @default("{}")
+  isEscalated     Boolean   @default(false)
+  escalatedTo     String?
+  messageCount    Int       @default(0)
+  startedAt       DateTime  @default(now())
+  lastMessageAt   DateTime  @default(now())
+  closedAt        DateTime?
+  
+  clinic          Clinic    @relation(fields: [clinicId], references: [id])
+  patient         Patient?  @relation(fields: [patientId], references: [id])
+  interactions    Interaction[]
+}
+
+model Interaction {
+  id             String    @id @default(uuid())
+  clinicId       String
+  patientId      String?
+  conversationId String?
+  channel        String
+  direction      String
+  content        String
+  mediaUrl       String?
+  handledBy      String    @default("ai")
+  agentId        String?
+  sentiment      String?
+  createdAt      DateTime  @default(now())
+  
+  clinic         Clinic    @relation(fields: [clinicId], references: [id])
+  patient        Patient?  @relation(fields: [patientId], references: [id])
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+}
+
+model Service {
+  id              String      @id @default(uuid())
+  clinicId        String
+  name            String
+  price           Decimal
+  durationMinutes Int         @default(30)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  clinic          Clinic      @relation(fields: [clinicId], references: [id])
+  appointments    Appointment[]
+}

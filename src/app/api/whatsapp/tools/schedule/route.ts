@@ -1,0 +1,65 @@
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export async function POST(req: Request) {
+  try {
+    const { clinicId, patientPhone, doctorId, date, time, specialty, patientName } = await req.json();
+
+    if (!clinicId || !patientPhone || !date || !time) {
+      return NextResponse.json({ error: "Parâmetros obrigatórios ausentes" }, { status: 400 });
+    }
+
+    // Procura o paciente pelo telefone na clínica ou cria um caso não exista
+    let patient = await prisma.patient.findFirst({
+      where: { clinicId, phone: { contains: patientPhone } }
+    });
+
+    if (!patient) {
+      patient = await prisma.patient.create({
+        data: {
+          clinicId,
+          fullName: patientName || "Paciente WhatsApp",
+          phone: patientPhone,
+          status: "scheduled",
+          priority: "normal"
+        }
+      });
+    } else {
+      // Atualiza status do paciente caso precise
+      await prisma.patient.update({
+        where: { id: patient.id },
+        data: { status: "scheduled" }
+      });
+    }
+
+    // Convertendo Date e Time para DateTime UTC
+    const scheduledDateTime = new Date(`${date}T${time}:00`);
+
+    const appointment = await prisma.appointment.create({
+      data: {
+        clinicId,
+        patientId: patient.id,
+        doctorId: doctorId || null,
+        specialty: specialty || "Geral",
+        scheduledAt: scheduledDateTime,
+        durationMinutes: 30, // Padrão
+        status: "scheduled",
+        appointmentType: "consultation"
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Agendamento realizado com sucesso",
+      appointmentId: appointment.id,
+      patientId: patient.id,
+      scheduledAt: appointment.scheduledAt
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error("Schedule error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
