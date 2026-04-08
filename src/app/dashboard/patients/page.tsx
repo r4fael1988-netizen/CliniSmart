@@ -1,6 +1,6 @@
 import { getPatients } from "./actions";
 import Link from "next/link";
-import { Search, UserPlus, FileEdit, MessageSquare, MoreHorizontal, Filter } from "lucide-react";
+import { Search, UserPlus, FileEdit, MessageSquare, MoreHorizontal, Filter, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

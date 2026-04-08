@@ -55,19 +55,22 @@ export async function POST(req: Request) {
         data: {
           clinicId: patient.clinicId,
           patientId: patient.id,
-          status: 'active',
-          channel: 'whatsapp'
+          phoneNumber: patient.phone,
+          whatsappInstance: instanceName,
+          status: 'active'
         }
       });
     }
 
     const interaction = await prisma.interaction.create({
       data: {
+        clinicId: patient.clinicId,
+        patientId: patient.id,
         conversationId: conversation.id,
-        type: 'text',
+        channel: 'whatsapp',
         content: textMessage,
         direction: 'outbound',
-        sentBy: sentBy // 'human' or 'ia'
+        handledBy: sentBy // 'human' or 'ia'
       }
     });
 

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         patient = await prisma.patient.create({
           data: {
             clinicId: clinic.id,
-            name: pushName,
+            fullName: pushName,
             phone: patientPhone,
             email: `${patientPhone}@temp.clinismart.com`,
           }
@@ -68,8 +68,9 @@ export async function POST(req: Request) {
           data: {
             clinicId: patient.clinicId,
             patientId: patient.id,
-            status: 'active',
-            channel: 'whatsapp'
+            phoneNumber: patientPhone,
+            whatsappInstance: instance || "default",
+            status: 'active'
           }
         });
       }
@@ -77,11 +78,13 @@ export async function POST(req: Request) {
       // Inserir Interaction (A Mensagem)
       await prisma.interaction.create({
         data: {
+          clinicId: patient.clinicId,
+          patientId: patient.id,
           conversationId: conversation.id,
-          type: 'text',
+          channel: 'whatsapp',
           content: textContent,
           direction: isFromMe ? 'outbound' : 'inbound',
-          sentBy: isFromMe ? 'human' : 'client' // n8n ou IA será ajustado no próximo webhook
+          handledBy: isFromMe ? 'human' : 'client'
         }
       });
     }
