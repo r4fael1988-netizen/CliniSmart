@@ -1,10 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 import { startOfDay, startOfWeek, endOfWeek, subDays, format } from "date-fns";
 
-const prisma = new PrismaClient();
 
 // Mantém a dashboard viva buscando os dados em server-time
 export const dynamic = 'force-dynamic';
