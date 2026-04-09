@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Save, Loader2, Phone, Briefcase } from "lucide-react";
+import { User, Mail, Shield, Camera, Lock, Save, Loader2, Phone, Briefcase } from "lucide-react";
 import { updateUserProfile } from "./actions";
 
 export const dynamic = "force-dynamic";
