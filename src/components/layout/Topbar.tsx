@@ -90,10 +90,10 @@ export function Topbar() {
             )}
             <div className="hidden flex-col items-start sm:flex text-left mr-2">
               <span className="text-sm font-bold text-gray-800 leading-tight">
-                {session?.user?.name || "Dr. Administrador"}
+                {session?.user?.name || "Carregando..."}
               </span>
-              <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
-                {(session?.user as any)?.role === 'admin' ? 'Administrador' : 'Recepcionista'}
+              <span className="text-[10px] font-medium text-primary shadow-sm px-1.5 py-0.5 bg-primary/5 rounded uppercase tracking-wider">
+                {(session?.user as any)?.role === 'admin' ? 'Administrador' : 'Colaborador'}
               </span>
             </div>
           </button>

@@ -11,7 +11,7 @@ model Clinic {
   id                 String         @id @default(uuid())
   name               String
   slug               String         @unique
-  logoUrl            String?
+  logoUrl            String?        @db.Text
   planStatus         String         @default("active")
   subscriptionEndsAt DateTime?
   whatsappInstance   String?
@@ -33,7 +33,7 @@ model User {
   email        String    @unique
   passwordHash String
   role         String    @default("receptionist")
-  avatarUrl    String?
+  avatarUrl    String?   @db.Text
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())

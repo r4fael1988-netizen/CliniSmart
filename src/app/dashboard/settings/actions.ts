@@ -30,12 +30,12 @@ export async function updateClinicSettings(data: {
       masterPrompt: data.masterPrompt ?? currentSettings.masterPrompt,
       aiActive: data.aiActive ?? currentSettings.aiActive,
       workHours: data.workHours ?? currentSettings.workHours,
-      logo: data.logo ?? currentSettings.logo,
     };
 
     await prisma.clinic.update({
       where: { id: session.user.clinicId },
       data: {
+        logoUrl: data.logo ?? undefined, // Salva no campo específico
         settings: updatedSettings
       }
     });
