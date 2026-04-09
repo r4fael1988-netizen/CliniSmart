@@ -93,7 +93,7 @@ export function Topbar() {
                 {session?.user?.name || "Dr. Administrador"}
               </span>
               <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
-                {session?.user?.role === 'admin' ? 'Administrador' : 'Recepcionista'}
+                {(session?.user as any)?.role === 'admin' ? 'Administrador' : 'Recepcionista'}
               </span>
             </div>
           </button>
@@ -124,7 +124,7 @@ export function Topbar() {
                     <Settings className="h-4 w-4" />
                     Configurações
                   </Link>
-                  {session?.user?.role === 'admin' && (
+                  {(session?.user as any)?.role === 'admin' && (
                     <Link 
                       href="/dashboard/settings?tab=team" 
                       onClick={() => setShowProfileMenu(false)}
