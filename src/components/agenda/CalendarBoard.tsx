@@ -106,7 +106,7 @@ export function CalendarBoard({ initialEvents, doctors, patients, services }: Ca
         onSelectSlot={handleSelectSlot}
         startAccessor="start"
         endAccessor="end"
-        style={{ height: "100%" }}
+        style={{ height: "calc(100vh - 250px)", minHeight: "600px" }}
         eventPropGetter={eventStyleGetter}
         messages={{
           next: "Próximo",

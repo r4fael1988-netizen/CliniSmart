@@ -82,7 +82,10 @@ export function PatientDetailsView({ patient }: { patient: any }) {
           >
             <MessageSquare className="h-4 w-4" /> Intervir agora
           </button>
-          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark transition-colors">
+          <button 
+            onClick={() => setActiveTab("agendamentos")}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark transition-colors"
+          >
             <Calendar className="h-4 w-4" /> Agendar
           </button>
         </div>

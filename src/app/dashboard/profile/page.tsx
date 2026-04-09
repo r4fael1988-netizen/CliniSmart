@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { User, Mail, Shield, Camera, Lock, Save, Loader2, Phone, Briefcase } from "lucide-react";
 import { updateUserProfile } from "./actions";
@@ -16,6 +16,8 @@ export default function ProfilePage() {
     confirmPassword: ""
   });
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Sync session data to form state when loaded
   useEffect(() => {
     if (session?.user) {
@@ -26,6 +28,30 @@ export default function ProfilePage() {
       }));
     }
   }, [session]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("A imagem deve ter menos de 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setIsSaving(true);
+      const result = await updateUserProfile({ image: base64 });
+      if (result.success) {
+        if (update) await update();
+      } else {
+        alert(result.error || "Erro ao subir imagem");
+      }
+      setIsSaving(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +99,18 @@ export default function ProfilePage() {
                   <User className="h-16 w-16 text-primary" />
                 )}
               </div>
-              <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-gray-500 hover:text-primary transition-all hover:scale-110 active:scale-95 group-hover:bg-primary group-hover:text-white">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="image/*" 
+                className="hidden" 
+              />
+              <button 
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border border-gray-100 text-gray-500 hover:text-primary transition-all hover:scale-110 active:scale-95 group-hover:bg-primary group-hover:text-white"
+              >
                 <Camera className="h-4 w-4" />
               </button>
             </div>

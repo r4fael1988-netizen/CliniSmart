@@ -17,7 +17,8 @@ export default function SettingsPage() {
   const [aiSettings, setAiSettings] = useState({
     agentName: "Sofia",
     masterPrompt: "",
-    aiActive: true
+    aiActive: true,
+    logo: ""
   });
 
   // Business Hours State
@@ -30,13 +31,25 @@ export default function SettingsPage() {
           setAiSettings({
             agentName: settings.agentName || "Sofia",
             masterPrompt: settings.masterPrompt || "",
-            aiActive: settings.aiActive ?? true
+            aiActive: settings.aiActive ?? true,
+            logo: settings.logo || ""
           });
           setWorkHours(settings.workHours || {});
         }
     }
     loadSettings();
   }, []);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAiSettings(prev => ({ ...prev, logo: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSaveAll = async () => {
     setIsSaving(true);
@@ -93,6 +106,31 @@ export default function SettingsPage() {
         <div className="flex-1 bg-white rounded-xl border border-border shadow-sm min-h-[500px]">
           {activeMenu === "ia" && (
             <div className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+               {/* Identidade Visual */}
+               <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-1 border-b border-gray-100 pb-2 flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" />
+                  Identidade Visual
+                </h2>
+                <div className="mt-4 flex items-center gap-6 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                  <div className="h-24 w-24 rounded-xl bg-white flex items-center justify-center border border-gray-100 shadow-sm overflow-hidden flex-shrink-0">
+                    {aiSettings.logo ? (
+                      <img src={aiSettings.logo} alt="Logo" className="max-h-full max-w-full object-contain" />
+                    ) : (
+                      <Globe className="h-8 w-8 text-gray-200" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">Logo da Clínica</h4>
+                    <p className="text-xs text-gray-500 mt-1 mb-3">Recomendado: 500x500px, PNG ou JPG.</p>
+                    <label className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all cursor-pointer shadow-sm">
+                      Mudar Logo
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-1 border-b border-gray-100 pb-2 flex items-center gap-2">
                   <Bot className="h-5 w-5 text-primary" />

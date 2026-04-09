@@ -61,10 +61,10 @@ export function UsersList() {
         </div>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
+          className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all active:scale-95 border-2 border-white/20"
         >
           <UserPlus className="h-4 w-4" />
-          Convidar Colaborador
+          Cadastrar Novo Colaborador
         </button>
       </div>
 
