@@ -385,17 +385,21 @@ export function PatientDetailsView({
          )}
          
          {activeTab === 'agendamentos' && (
-            <div className="space-y-4">
-              <div className="flex justify-end">
+            <div className="space-y-4 animate-in fade-in duration-300">
+              <div className="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
+                <div>
+                  <h4 className="font-bold text-blue-900">Histórico de Consultas</h4>
+                  <p className="text-xs text-blue-700">Gerencie todos os agendamentos deste paciente aqui.</p>
+                </div>
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
+                  className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all active:scale-95 shrink-0"
                 >
                   <Calendar className="h-4 w-4" />
                   Novo Agendamento
                 </button>
               </div>
-              <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden min-h-[400px]">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
                <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100 text-xs uppercase font-bold text-gray-500">
                      <tr>
