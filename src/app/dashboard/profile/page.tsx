@@ -77,7 +77,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-500">
                 <Briefcase className="h-4 w-4" />
-                <span>{session?.user?.clinicName || "Clínica Master"}</span>
+                <span>{(session?.user as any)?.clinicName || "Clínica Master"}</span>
               </div>
             </div>
           </div>
