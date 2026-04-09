@@ -8,6 +8,7 @@ import { updateClinicSettings, getClinicSettings } from "@/app/dashboard/setting
 import { DoctorsList } from "@/components/settings/DoctorsList";
 import { WorkingHours } from "@/components/settings/WorkingHours";
 import { UsersList } from "@/components/settings/UsersList";
+import { compressImage } from "@/lib/utils/image";
 
 export default function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState("ia");

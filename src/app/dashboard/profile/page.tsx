@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { User, Mail, Shield, Camera, Lock, Save, Loader2, Phone, Briefcase } from "lucide-react";
 import { updateUserProfile } from "./actions";
+import { compressImage } from "@/lib/utils/image";
 
 export default function ProfilePage() {
   const { data: session, update } = useSession();
