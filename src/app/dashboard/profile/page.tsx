@@ -4,13 +4,9 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { User, Mail, Shield, Camera, Lock, Save, Loader2, Phone, Briefcase } from "lucide-react";
 import { updateUserProfile } from "./actions";
-import dynamic from "next/dynamic";
 
-function ProfilePageContent() {
-  const sessionData = useSession();
-  const session = sessionData?.data;
-  const update = sessionData?.update;
-  
+export default function ProfilePage() {
+  const { data: session, update } = useSession();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -25,8 +21,8 @@ function ProfilePageContent() {
     if (session?.user) {
       setFormData(prev => ({
         ...prev,
-        name: session.user?.name || "",
-        email: session.user?.email || "",
+        name: session.user.name || "",
+        email: session.user.email || "",
       }));
     }
   }, [session]);
@@ -48,7 +44,7 @@ function ProfilePageContent() {
 
     if (result.success) {
       alert("Perfil atualizado com sucesso!");
-      if (update) await update();
+      await update();
       setFormData(prev => ({ ...prev, currentPassword: "", newPassword: "", confirmPassword: "" }));
     } else {
       alert(result.error || "Erro ao atualizar perfil");
@@ -199,9 +195,3 @@ function ProfilePageContent() {
     </div>
   );
 }
-
-// Export a dynamic version to disable SSR for this page
-export default dynamic(() => Promise.resolve(ProfilePageContent), { 
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-});
