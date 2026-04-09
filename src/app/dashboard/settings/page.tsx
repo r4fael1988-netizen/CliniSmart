@@ -7,6 +7,7 @@ import { ServicesList } from "@/components/settings/ServicesList";
 import { updateClinicSettings, getClinicSettings } from "@/app/dashboard/settings/actions";
 import { DoctorsList } from "@/components/settings/DoctorsList";
 import { WorkingHours } from "@/components/settings/WorkingHours";
+import { UsersList } from "@/components/settings/UsersList";
 
 export default function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState("ia");
@@ -156,7 +157,14 @@ export default function SettingsPage() {
 
           {activeMenu === "services" && <ServicesList />}
 
-          {activeMenu === "team" && <DoctorsList />}
+          {activeMenu === "team" && (
+            <div className="divide-y divide-gray-100">
+              <UsersList />
+              <div className="pt-6">
+                <DoctorsList />
+              </div>
+            </div>
+          )}
           
           {activeMenu === "hours" && (
             <WorkingHours 
