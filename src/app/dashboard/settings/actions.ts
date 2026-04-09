@@ -9,6 +9,7 @@ export async function updateClinicSettings(data: {
   agentName?: string;
   masterPrompt?: string;
   aiActive?: boolean;
+  workHours?: any;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.clinicId) return { error: "Não autorizado" };
@@ -27,6 +28,7 @@ export async function updateClinicSettings(data: {
       agentName: data.agentName ?? currentSettings.agentName,
       masterPrompt: data.masterPrompt ?? currentSettings.masterPrompt,
       aiActive: data.aiActive ?? currentSettings.aiActive,
+      workHours: data.workHours ?? currentSettings.workHours,
     };
 
     await prisma.clinic.update({

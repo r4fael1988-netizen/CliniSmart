@@ -6,6 +6,7 @@ import { WhatsAppConnection } from "@/components/settings/WhatsAppConnection";
 import { ServicesList } from "@/components/settings/ServicesList";
 import { updateClinicSettings, getClinicSettings } from "@/app/dashboard/settings/actions";
 import { DoctorsList } from "@/components/settings/DoctorsList";
+import { WorkingHours } from "@/components/settings/WorkingHours";
 
 export default function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState("ia");
@@ -18,23 +19,30 @@ export default function SettingsPage() {
     aiActive: true
   });
 
+  // Business Hours State
+  const [workHours, setWorkHours] = useState<any>({});
+
   useEffect(() => {
     async function loadSettings() {
       const settings = await getClinicSettings();
-      if (settings) {
-        setAiSettings({
-          agentName: settings.agentName || "Sofia",
-          masterPrompt: settings.masterPrompt || "",
-          aiActive: settings.aiActive ?? true
-        });
-      }
+        if (settings) {
+          setAiSettings({
+            agentName: settings.agentName || "Sofia",
+            masterPrompt: settings.masterPrompt || "",
+            aiActive: settings.aiActive ?? true
+          });
+          setWorkHours(settings.workHours || {});
+        }
     }
     loadSettings();
   }, []);
 
   const handleSaveAll = async () => {
     setIsSaving(true);
-    const result = await updateClinicSettings(aiSettings);
+    const result = await updateClinicSettings({
+      ...aiSettings,
+      workHours
+    });
     if (result.success) {
       alert("Configurações salvas com sucesso!");
     } else {
@@ -149,6 +157,13 @@ export default function SettingsPage() {
           {activeMenu === "services" && <ServicesList />}
 
           {activeMenu === "team" && <DoctorsList />}
+          
+          {activeMenu === "hours" && (
+            <WorkingHours 
+              initialData={workHours} 
+              onChange={(config) => setWorkHours(config)} 
+            />
+          )}
 
           {activeMenu === "billing" && (
             <div className="p-6 space-y-6">
