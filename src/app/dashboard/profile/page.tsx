@@ -1,25 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { User, Mail, Shield, Camera, Lock, Save, Loader2, Phone, Briefcase } from "lucide-react";
 import { updateUserProfile } from "./actions";
+import dynamic from "next/dynamic";
 
-export const dynamic = "force-dynamic";
-
-export default function ProfilePage() {
-  const sessionContext = useSession();
-  const session = sessionContext?.data;
-  const update = sessionContext?.update;
+function ProfilePageContent() {
+  const sessionData = useSession();
+  const session = sessionData?.data;
+  const update = sessionData?.update;
   
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: session?.user?.name || "",
-    email: session?.user?.email || "",
+    name: "",
+    email: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
+
+  // Sync session data to form state when loaded
+  useEffect(() => {
+    if (session?.user) {
+      setFormData(prev => ({
+        ...prev,
+        name: session.user?.name || "",
+        email: session.user?.email || "",
+      }));
+    }
+  }, [session]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +48,10 @@ export default function ProfilePage() {
 
     if (result.success) {
       alert("Perfil atualizado com sucesso!");
-      await update(); // Atualiza a sessão do cliente
+      if (update) await update();
       setFormData(prev => ({ ...prev, currentPassword: "", newPassword: "", confirmPassword: "" }));
     } else {
-      alert(result.error);
+      alert(result.error || "Erro ao atualizar perfil");
     }
     setIsSaving(false);
   };
@@ -73,7 +83,7 @@ export default function ProfilePage() {
             </div>
             
             <h2 className="mt-4 text-xl font-bold text-gray-900">{session?.user?.name || "Usuário"}</h2>
-            <p className="text-sm font-medium text-primary uppercase tracking-widest mt-1">{session?.user?.role === 'admin' ? 'Administrador' : 'Equipe'}</p>
+            <p className="text-sm font-medium text-primary uppercase tracking-widest mt-1">{(session?.user as any)?.role === 'admin' ? 'Administrador' : 'Equipe'}</p>
             
             <div className="w-full mt-6 pt-6 border-t border-gray-50 space-y-3">
               <div className="flex items-center gap-3 text-sm text-gray-500">
@@ -189,3 +199,9 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+// Export a dynamic version to disable SSR for this page
+export default dynamic(() => Promise.resolve(ProfilePageContent), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+});
