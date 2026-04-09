@@ -6,7 +6,6 @@ import { WhatsAppConnection } from "@/components/settings/WhatsAppConnection";
 import { ServicesList } from "@/components/settings/ServicesList";
 import { updateClinicSettings, getClinicSettings } from "@/app/dashboard/settings/actions";
 import { DoctorsList } from "@/components/settings/DoctorsList";
-import { useEffect } from "react";
 
 export default function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState("ia");
