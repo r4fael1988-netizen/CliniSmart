@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-
+import path from "path";
 
 function generateSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
 export async function POST(req: Request) {
-  console.log("--> API DE REGISTRO CHAMADA às " + new Date().toLocaleTimeString());
   try {
     const { clinicName, userName, email, password } = await req.json();
 
@@ -71,14 +70,23 @@ export async function POST(req: Request) {
     }, { status: 201 });
 
   } catch (error: any) {
+    console.error("❌ ERRO NO REGISTRO:", error);
+    
     // Erro genérico para produção por segurança
     let message = "Erro interno ao processar o cadastro.";
     
     // Tratamento de conflitos conhecidos
     if (error.code === 'P2002') {
-       message = "Este email já está em uso ou houve um conflito no nome da clínica.";
+       const target = error.meta?.target || [];
+       if (target.includes('email')) {
+         message = "Este e-mail já está sendo usado por outra clínica.";
+       } else if (target.includes('slug')) {
+         message = "Já existe uma clínica com este nome ou slug similar.";
+       } else {
+         message = "Conflito de dados: algumas informações já existem em nosso sistema.";
+       }
     }
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, details: error.message }, { status: 500 });
   }
 }
