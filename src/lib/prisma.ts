@@ -1,9 +1,19 @@
-// CliniSmart Database Connection Singleton - Last Updated: 2026-04-08
 import { PrismaClient } from '@prisma/client'
+import * as dotenv from 'dotenv'
 
+// Força o carregamento do .env em ambientes onde o Next.js falha no carregamento precoce
+dotenv.config()
+
+if (!process.env.DATABASE_URL) {
+  console.warn("⚠️ DATABASE_URL não encontrada em process.env durante a inicialização do Prisma.");
+} else {
+  console.log("✅ DATABASE_URL detectada com sucesso.");
+}
 
 const prismaClientSingleton = () => {
-  return new PrismaClient()
+  return new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL,
+  })
 }
 
 declare global {
