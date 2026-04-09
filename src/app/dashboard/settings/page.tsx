@@ -1,12 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { Save, Bot, Key, CreditCard, Users, Clock, Globe, ClipboardList } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Save, Bot, Key, CreditCard, Users, Clock, Globe, ClipboardList, Loader2 } from "lucide-react";
 import { WhatsAppConnection } from "@/components/settings/WhatsAppConnection";
 import { ServicesList } from "@/components/settings/ServicesList";
+import { updateClinicSettings, getClinicSettings } from "@/app/dashboard/settings/actions";
+import { DoctorsList } from "@/components/settings/DoctorsList";
+import { useEffect } from "react";
 
 export default function SettingsPage() {
   const [activeMenu, setActiveMenu] = useState("ia");
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // AI Settings State
+  const [aiSettings, setAiSettings] = useState({
+    agentName: "Sofia",
+    masterPrompt: "",
+    aiActive: true
+  });
+
+  useEffect(() => {
+    async function loadSettings() {
+      const settings = await getClinicSettings();
+      if (settings) {
+        setAiSettings({
+          agentName: settings.agentName || "Sofia",
+          masterPrompt: settings.masterPrompt || "",
+          aiActive: settings.aiActive ?? true
+        });
+      }
+    }
+    loadSettings();
+  }, []);
+
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    const result = await updateClinicSettings(aiSettings);
+    if (result.success) {
+      alert("Configurações salvas com sucesso!");
+    } else {
+      alert(result.error);
+    }
+    setIsSaving(false);
+  };
 
   const menuItems = [
     { id: "ia", name: "Inteligência Artificial", icon: Bot },
@@ -48,25 +84,41 @@ export default function SettingsPage() {
         {/* Content Area */}
         <div className="flex-1 bg-white rounded-xl border border-border shadow-sm min-h-[500px]">
           {activeMenu === "ia" && (
-            <div className="p-6 space-y-8">
+            <div className="p-6 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-1 border-b border-gray-100 pb-2">Comportamento do Agente Virtual</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-1 border-b border-gray-100 pb-2 flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  Comportamento do Agente Virtual
+                </h2>
                 <div className="mt-4 grid gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Agente Virtual</label>
-                    <input type="text" defaultValue="Sofia" className="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
+                    <input 
+                      type="text" 
+                      value={aiSettings.agentName} 
+                      onChange={(e) => setAiSettings(prev => ({ ...prev, agentName: e.target.value }))}
+                      className="w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" 
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Prompt Mestre (Contexto Base)</label>
                     <textarea 
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-32 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
-                      defaultValue="Você é a Sofia, a assistente virtual da Clínica Master. Seu tom é empático, profissional e acolhedor. Seu objetivo principal é confirmar se o paciente deseja marcar uma consulta e direcioná-lo para a fila do Kanban em caso positivo..."
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-48 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none transition-all"
+                      value={aiSettings.masterPrompt}
+                      onChange={(e) => setAiSettings(prev => ({ ...prev, masterPrompt: e.target.value }))}
+                      placeholder="Ex: Você é a Sofia, assistente virtual da Clínica Master..."
                     />
-                    <p className="text-xs text-gray-500 mt-1">Essa diretriz molda a personalidade da IA do WhatsApp.</p>
+                    <p className="text-xs text-gray-500 mt-1">Essa diretriz molda a personalidade e as regras da IA no WhatsApp.</p>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <input type="checkbox" id="ai-active" defaultChecked className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" />
-                    <label htmlFor="ai-active" className="text-sm text-gray-700">Ativar respostas automáticas 24/7</label>
+                  <div className="flex items-center gap-2 mt-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <input 
+                      type="checkbox" 
+                      id="ai-active" 
+                      checked={aiSettings.aiActive} 
+                      onChange={(e) => setAiSettings(prev => ({ ...prev, aiActive: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" 
+                    />
+                    <label htmlFor="ai-active" className="text-sm font-medium text-gray-700 cursor-pointer">Ativar respostas automáticas 24/7</label>
                   </div>
                 </div>
               </div>
@@ -97,16 +149,7 @@ export default function SettingsPage() {
 
           {activeMenu === "services" && <ServicesList />}
 
-          {activeMenu === "team" && (
-            <div className="p-6 flex flex-col items-center justify-center h-full text-center min-h-[400px]">
-              <Users className="h-12 w-12 text-gray-300 mb-3" />
-              <h3 className="text-lg font-medium text-gray-900">Gestão de Equipe</h3>
-              <p className="text-sm text-gray-500 max-w-sm mt-1">Interface para cadastrar médicos, recepcionistas e liberar acessos ao sistema.</p>
-              <button className="mt-4 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Adicionar Membro
-              </button>
-            </div>
-          )}
+          {activeMenu === "team" && <DoctorsList />}
 
           {activeMenu === "billing" && (
             <div className="p-6 space-y-6">
@@ -149,8 +192,12 @@ export default function SettingsPage() {
 
           {/* Action Footer */}
           <div className="border-t border-gray-100 p-4 bg-gray-50/50 rounded-b-xl flex justify-end">
-            <button className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark transition-colors">
-              <Save className="h-4 w-4" />
+            <button 
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar Alterações
             </button>
           </div>

@@ -149,3 +149,53 @@ export async function updatePatientNotes(id: string, notes: string) {
     return { error: "Falha ao salvar anotações." };
   }
 }
+
+export async function createPatient(data: {
+  fullName: string;
+  phone: string;
+  email?: string;
+  birthDate?: string;
+  cpf?: string;
+  healthPlan?: string;
+  notes?: string;
+}) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.clinicId) return { error: "Não autorizado" };
+
+  try {
+    // Valida duplicidade de telefone na mesma clínica
+    const existing = await prisma.patient.findUnique({
+      where: {
+        clinicId_phone: {
+          clinicId: session.user.clinicId,
+          phone: data.phone
+        }
+      }
+    });
+
+    if (existing) {
+      return { error: "Já existe um paciente cadastrado com este telefone nesta clínica." };
+    }
+
+    const patient = await prisma.patient.create({
+      data: {
+        clinicId: session.user.clinicId,
+        fullName: data.fullName,
+        phone: data.phone,
+        email: data.email,
+        birthDate: data.birthDate ? new Date(data.birthDate) : null,
+        cpf: data.cpf,
+        healthPlan: data.healthPlan,
+        notes: data.notes,
+        source: "manual",
+        status: "new_contact"
+      }
+    });
+
+    revalidatePath("/dashboard/patients");
+    return { success: true, id: patient.id };
+  } catch (error) {
+    console.error("Erro ao criar paciente:", error);
+    return { error: "Falha ao criar paciente. Verifique os dados." };
+  }
+}

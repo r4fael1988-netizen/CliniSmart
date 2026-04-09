@@ -8,6 +8,7 @@ function generateSlug(name: string) {
 }
 
 export async function POST(req: Request) {
+  console.log("--> API DE REGISTRO CHAMADA às " + new Date().toLocaleTimeString());
   try {
     const { clinicName, userName, email, password } = await req.json();
 
@@ -69,8 +70,21 @@ export async function POST(req: Request) {
       clinic: { id: result.clinic.id, slug: result.clinic.slug }
     }, { status: 201 });
 
-  } catch (error) {
-    console.error("Erro no cadastro:", error);
-    return NextResponse.json({ error: "Erro interno ao processar o cadastro." }, { status: 500 });
+  } catch (error: any) {
+    console.error("DEBUG - Erro no cadastro:", error);
+    
+    // Identificação de erro de banco (Prisma)
+    let message = "ERRO DIAGNÓSTICO: Ocorreu uma falha no servidor.";
+    if (error.code === 'P2002') {
+       message = "Conflito de dados: O slug da clínica ou e-mail já existem.";
+    } else if (error.message) {
+       message = `DETALHE TÉCNICO: ${error.message}`;
+    }
+
+    return NextResponse.json({ 
+      error: message,
+      details: error.code || "UNKNOWN_ERROR",
+      stack: error.stack
+    }, { status: 500 });
   }
 }
