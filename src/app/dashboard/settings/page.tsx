@@ -40,13 +40,20 @@ export default function SettingsPage() {
     loadSettings();
   }, []);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setAiSettings(prev => ({ ...prev, logo: reader.result as string }));
+    reader.onloadend = async () => {
+      let base64 = reader.result as string;
+      try {
+        base64 = await compressImage(base64);
+        setAiSettings(prev => ({ ...prev, logo: base64 }));
+      } catch (error) {
+        console.error("Erro na compressão:", error);
+        alert("Erro ao processar imagem");
+      }
     };
     reader.readAsDataURL(file);
   };

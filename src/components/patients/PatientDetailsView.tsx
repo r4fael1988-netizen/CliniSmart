@@ -4,15 +4,35 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, MessageSquare, Calendar, Phone, Mail, MoreVertical, Send, Bot, User, Clock, Loader2 } from "lucide-react";
 import { sendMessage, updatePatientNotes } from "@/app/dashboard/patients/actions";
+import { createAppointment } from "@/app/dashboard/agenda/actions";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { X, Check, Stethoscope, UserCheck } from "lucide-react";
 
-export function PatientDetailsView({ patient }: { patient: any }) {
+export function PatientDetailsView({ 
+  patient, 
+  doctors = [], 
+  services = [] 
+}: { 
+  patient: any;
+  doctors?: any[];
+  services?: any[];
+}) {
   const [activeTab, setActiveTab] = useState("resumo");
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [notes, setNotes] = useState(patient.notes || "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  
+  // Modal Agendamento
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selection, setSelection] = useState({
+    doctorId: "",
+    serviceId: "",
+    start: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    notes: ""
+  });
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -49,11 +69,124 @@ export function PatientDetailsView({ patient }: { patient: any }) {
     setIsSavingNotes(false);
   };
 
+  const handleCreateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const result = await createAppointment({
+      patientId: patient.id,
+      doctorId: selection.doctorId || undefined,
+      serviceId: selection.serviceId || undefined,
+      scheduledAt: new Date(selection.start),
+      durationMinutes: 30,
+      notes: selection.notes
+    });
+
+    if (result.success) {
+      setIsModalOpen(false);
+      window.location.reload(); // Atualiza pra mostrar o novo agendamento
+    } else {
+      alert(result.error);
+    }
+    setIsSubmitting(false);
+  };
+
   const interactions = patient.conversations?.[0]?.interactions || [];
   const appointments = patient.appointments || [];
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      {/* MODAL DE AGENDAMENTO EXCLUSIVO DESTE PACIENTE */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+            <div className="bg-primary p-6 text-white relative">
+              <button onClick={() => setIsModalOpen(false)} className="absolute right-4 top-4 p-1 hover:bg-white/20 rounded-lg transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-xl">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Marcar Consulta</h3>
+                  <p className="text-blue-100 text-sm">Para: {patient.fullName}</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateAppointment} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Data e Horário
+                  </label>
+                  <input 
+                    type="datetime-local"
+                    required
+                    value={selection.start}
+                    onChange={(e) => setSelection({...selection, start: e.target.value})}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  />
+                </div>
+
+                 {/* Médico */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <Stethoscope className="h-3 w-3" /> Médico
+                  </label>
+                  <select 
+                    value={selection.doctorId}
+                    onChange={(e) => setSelection({...selection, doctorId: e.target.value})}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="">Qualquer médico</option>
+                    {doctors.map(d => <option key={d.id} value={d.id}>{d.name} ({d.specialty})</option>)}
+                  </select>
+                </div>
+
+                {/* Serviço */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <UserCheck className="h-3 w-3" /> Serviço / Procedimento
+                  </label>
+                  <select 
+                    value={selection.serviceId}
+                    onChange={(e) => setSelection({...selection, serviceId: e.target.value})}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="">Selecione o serviço...</option>
+                    {services.map(s => <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  Anotações Internas
+                </label>
+                <textarea 
+                  value={selection.notes}
+                  onChange={(e) => setSelection({...selection, notes: e.target.value})}
+                  placeholder="Ex: Primeira vez na clínica..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm h-20 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4" />}
+                  Confirmar Agendamento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header Profile */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -252,7 +385,17 @@ export function PatientDetailsView({ patient }: { patient: any }) {
          )}
          
          {activeTab === 'agendamentos' && (
-            <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden min-h-[400px]">
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Novo Agendamento
+                </button>
+              </div>
+              <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden min-h-[400px]">
                <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100 text-xs uppercase font-bold text-gray-500">
                      <tr>

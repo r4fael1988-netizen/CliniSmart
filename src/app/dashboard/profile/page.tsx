@@ -33,21 +33,26 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("A imagem deve ter menos de 2MB");
-      return;
-    }
-
     const reader = new FileReader();
     reader.onloadend = async () => {
-      const base64 = reader.result as string;
+      let base64 = reader.result as string;
       setIsSaving(true);
-      const result = await updateUserProfile({ image: base64 });
-      if (result.success) {
-        if (update) await update();
-      } else {
-        alert(result.error || "Erro ao subir imagem");
+      
+      try {
+        // Comprime a imagem para evitar estouro de payload (limite Vercel 4.5MB)
+        base64 = await compressImage(base64);
+        
+        const result = await updateUserProfile({ image: base64 });
+        if (result.success) {
+          if (update) await update();
+        } else {
+          alert(result.error || "Erro ao subir imagem");
+        }
+      } catch (error) {
+        console.error("Erro na compressão:", error);
+        alert("Erro ao processar imagem");
       }
+      
       setIsSaving(false);
     };
     reader.readAsDataURL(file);
