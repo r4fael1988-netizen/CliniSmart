@@ -5,25 +5,26 @@ import prisma from "@/lib/prisma";
 // Evolution API Integration / Webhook Receptor
 export async function POST(req: Request) {
   try {
-    // 1. Recebe payload vindo do Evolution API (ou propagado pelo n8n)
+    // 1. Recebe payload vindo do Evolution API
     const payload = await req.json();
 
-    // Verificação de segurança (Webhook Secret ou API Key dependendo de como Evolution está configurado)
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.EVOLUTION_API_TOKEN}`) {
+    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+      console.error("Tentativa de acesso não autorizado ao Webhook:", authHeader);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Estrutura básica Evolution API v2 para mensagens recebidas
+    // Estrutura Evolution API v2
     const { instance, data, event } = payload;
     
-    // Ignorar eventos não relacionados a mensagens
-    if (event !== 'messages.upsert') {
-      return NextResponse.json({ status: "ignored event type" }, { status: 200 });
+    const eventType = (event || "").toString().toLowerCase();
+    
+    if (eventType !== 'messages.upsert' && eventType !== 'messages_upsert') {
+      return NextResponse.json({ status: "ignored event type", event }, { status: 200 });
     }
 
     const messageData = data.messages[0];
-    const remoteJid = messageData.key.remoteJid; // O telefone do contato ex: 5511999999999@s.whatsapp.net
+    const remoteJid = messageData.key.remoteJid;
     const pushName = messageData.pushName || "Desconhecido";
     const textContent = messageData.message?.conversation || messageData.message?.extendedTextMessage?.text || "";
     const isFromMe = messageData.key.fromMe;
@@ -34,61 +35,85 @@ export async function POST(req: Request) {
 
     const patientPhone = remoteJid.split('@')[0];
 
-    // Lógica para registrar interação no banco do CRM (Resgate do histórico exigido no Módulo 6)
-    // Usamos transaction ou garantimos que o Clinic e Patient existem
-    let patient = await prisma.patient.findFirst({
-      where: { phone: { contains: patientPhone } }
+    // Busca clínica vinculada a esta instância do WhatsApp
+    const clinic = await prisma.clinic.findFirst({
+      where: { whatsappInstance: instance }
     });
 
-    // Se paciente não existe (Lead Novo), delegar para o n8n qualificá-lo primeiro
-    // Mas registramos temporariamente se o clinica base estiver disponivel (Pegaremos o primeiro admin para demo)
-    if (!patient) {
-      const clinic = await prisma.clinic.findFirst();
-      if (clinic) {
-        patient = await prisma.patient.create({
-          data: {
-            clinicId: clinic.id,
-            fullName: pushName,
-            phone: patientPhone,
-            email: `${patientPhone}@temp.clinismart.com`,
-          }
-        });
-      }
+    if (!clinic) {
+      return NextResponse.json({ error: "Clinic not found for this instance" }, { status: 404 });
     }
 
-    if (patient) {
-      // Garantir existência de uma Conversation aberta para popular a nossa UI Web do Chat
-      let conversation = await prisma.conversation.findFirst({
-        where: { patientId: patient.id, status: 'active' }
-      });
+    // Gerenciamento de Paciente/Lead
+    let patient = await prisma.patient.findFirst({
+      where: { clinicId: clinic.id, phone: { contains: patientPhone } }
+    });
 
-      if (!conversation) {
-        conversation = await prisma.conversation.create({
-          data: {
-            clinicId: patient.clinicId,
-            patientId: patient.id,
-            phoneNumber: patientPhone,
-            whatsappInstance: instance || "default",
-            status: 'active'
-          }
-        });
-      }
-
-      // Inserir Interaction (A Mensagem)
-      await prisma.interaction.create({
+    if (!patient) {
+      patient = await prisma.patient.create({
         data: {
-          clinicId: patient.clinicId,
-          patientId: patient.id,
-          conversationId: conversation.id,
-          channel: 'whatsapp',
-          content: textContent,
-          direction: isFromMe ? 'outbound' : 'inbound',
-          handledBy: isFromMe ? 'human' : 'client'
+          clinicId: clinic.id,
+          fullName: pushName,
+          phone: patientPhone,
+          email: `${patientPhone}@temp.clinismart.com`,
         }
       });
     }
 
-    return NextResponse.json({ success: true, message: "Interaction logged" }, { status: 200 });
+    // Registro da Mensagem no CRM
+    let conversation = await prisma.conversation.findFirst({
+      where: { patientId: patient.id, status: 'active' }
+    });
+
+    if (!conversation) {
+      conversation = await prisma.conversation.create({
+        data: {
+          clinicId: clinic.id,
+          patientId: patient.id,
+          phoneNumber: patientPhone,
+          whatsappInstance: instance,
+          status: 'active'
+        }
+      });
+    }
+
+    await prisma.interaction.create({
+      data: {
+        clinicId: clinic.id,
+        patientId: patient.id,
+        conversationId: conversation.id,
+        channel: 'whatsapp',
+        content: textContent,
+        direction: isFromMe ? 'outbound' : 'inbound',
+        handledBy: isFromMe ? 'human' : 'client'
+      }
+    });
+
+    // ENCAMINHAMENTO PARA AGENTE DE IA (n8n)
+    const settings = (clinic.settings as any) || {};
+    if (settings.aiActive && !isFromMe) {
+        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE;
+        if (n8nWebhookUrl) {
+           // Dispara async para não travar o webhook do Evolution
+           fetch(n8nWebhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clinicId: clinic.id,
+                clinicName: clinic.name,
+                patientId: patient.id,
+                patientName: patient.fullName,
+                patientPhone: patientPhone,
+                message: textContent,
+                agentName: settings.agentName || "Sofia",
+                masterPrompt: settings.masterPrompt || "",
+                instance: instance
+              })
+           }).catch(err => console.error("Error forwarding to n8n:", err));
+        }
+    }
+
+    return NextResponse.json({ success: true, message: "Interaction logged and forwarded" }, { status: 200 });
 
   } catch (error) {
     console.error("Evolution Webhook Error:", error);

@@ -5,6 +5,11 @@ import prisma from "@/lib/prisma";
 // Evolution API Integration / Outbound Sender Endpoint
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { patientId, textMessage, sentBy = "human" } = await req.json();
 
     // Na prática o Endpoint protegerá a rota com auth middleware
@@ -22,7 +27,7 @@ export async function POST(req: Request) {
 
     // Chamada REAL para Evolution API enviar a mensagem  
     const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "http://localhost:8080";
-    const EVOLUTION_API_KEY = process.env.EVOLUTION_API_TOKEN;
+    const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
     const instanceName = process.env.EVOLUTION_INSTANCE_NAME || "ClinicaMaster";
 
     // Uncomment para uso real em produção:

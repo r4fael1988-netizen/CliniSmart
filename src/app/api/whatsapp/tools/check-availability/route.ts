@@ -4,6 +4,11 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { clinicId, date, specialty } = await req.json();
 
     if (!clinicId || !date) {
