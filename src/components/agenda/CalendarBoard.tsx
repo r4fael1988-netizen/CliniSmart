@@ -134,8 +134,8 @@ export function CalendarBoard({ initialEvents, doctors, patients, services }: Ca
                   <CalendarIcon className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">Novo Agendamento</h3>
-                  <p className="text-blue-100 text-sm">{format(selection.start, "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}</p>
+                  <h3 className="text-xl font-bold uppercase tracking-tight">Novo Agendamento</h3>
+                  <p className="text-blue-100 text-sm font-medium">{moment(selection.start).format("dddd, DD [de] MMMM [às] HH:mm")}</p>
                 </div>
               </div>
             </div>
@@ -166,9 +166,9 @@ export function CalendarBoard({ initialEvents, doctors, patients, services }: Ca
                   <select 
                     value={selection.doctorId}
                     onChange={(e) => setSelection({...selection, doctorId: e.target.value})}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   >
-                    <option value="">Qualquer médico</option>
+                    <option value="">Selecione o médico...</option>
                     {doctors.map(d => <option key={d.id} value={d.id}>{d.name} ({d.specialty})</option>)}
                   </select>
                 </div>
@@ -176,8 +176,8 @@ export function CalendarBoard({ initialEvents, doctors, patients, services }: Ca
                 {/* Serviço */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Serviço / Procedimento
-                  </label>
+                  <Clock className="h-3 w-3" /> Serviço e Procedimento
+                </label>
                   <select 
                     value={selection.serviceId}
                     onChange={(e) => setSelection({...selection, serviceId: e.target.value})}
@@ -196,8 +196,8 @@ export function CalendarBoard({ initialEvents, doctors, patients, services }: Ca
                 <textarea 
                   value={selection.notes}
                   onChange={(e) => setSelection({...selection, notes: e.target.value})}
-                  placeholder="Ex: Paciente com urgência, primeira vez na clínica."
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm h-20 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
+                  placeholder="Ex: Paciente com urgência, primeira vez na clínica..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm h-20 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none transition-all"
                 />
               </div>
 
@@ -218,9 +218,3 @@ export function CalendarBoard({ initialEvents, doctors, patients, services }: Ca
     </div>
   );
 }
-
-// Helper to format date in the client component
-function format(date: Date, formatStr: string, options: any) {
-  return moment(date).format("dddd, DD [de] MMMM [às] HH:mm");
-}
-const ptBR = null;

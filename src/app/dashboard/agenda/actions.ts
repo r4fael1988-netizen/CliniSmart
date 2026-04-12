@@ -90,6 +90,11 @@ export async function createAppointment(data: {
   if (!session?.user?.clinicId) return { error: "Não autorizado" };
 
   try {
+    // Validação básica de data
+    if (data.scheduledAt < new Date()) {
+      return { error: "Não é possível realizar agendamentos em datas retroativas." };
+    }
+
     // Busca o serviço pra pegar o valor e a especialidade (nome do serviço)
     let value = 0;
     let specialty = "Consulta Geral";
@@ -122,6 +127,6 @@ export async function createAppointment(data: {
     return { success: true };
   } catch (error) {
     console.error("Erro ao agendar:", error);
-    return { error: "Falha ao criar agendamento." };
+    return { error: "Ocorreu um erro técnico ao processar seu agendamento. Por favor, tente novamente." };
   }
 }
