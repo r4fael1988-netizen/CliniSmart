@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Users, Calendar, TrendingUp, Clock, Bot, DollarSign 
 } from "lucide-react";
@@ -23,6 +25,14 @@ interface DashboardProps {
 }
 
 export function DashboardCharts({ kpis, leadsData, specialtyData, messageVolume, latestInteractions }: DashboardProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 30000); // Atualiza a cada 30 segundos
+    return () => clearInterval(interval);
+  }, [router]);
   
   const kpiCards = [
     { title: "Leads Hoje", value: kpis.leadsToday.toString(), trend: "Tempo real", icon: Users, color: "text-blue-600", bg: "bg-blue-100" },

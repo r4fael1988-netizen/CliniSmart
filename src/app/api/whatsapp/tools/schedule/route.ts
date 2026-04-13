@@ -41,6 +41,24 @@ export async function POST(req: Request) {
     // Convertendo Date e Time para DateTime UTC
     const scheduledDateTime = new Date(`${date}T${time}:00`);
 
+    // Verificação de conflito de horário
+    if (doctorId) {
+      const conflict = await prisma.appointment.findFirst({
+        where: {
+          doctorId,
+          scheduledAt: scheduledDateTime,
+          status: { not: "cancelled" }
+        }
+      });
+
+      if (conflict) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Horário já ocupado para este médico." 
+        }, { status: 409 });
+      }
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         clinicId,

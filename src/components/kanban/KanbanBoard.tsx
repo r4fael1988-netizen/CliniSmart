@@ -101,6 +101,8 @@ export function KanbanBoard({ initialCards }: { initialCards: CardType[] }) {
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
     const droppedCard = activeCard;
+    const originalCards = [...cards]; // Backup for reversion
+    
     setActiveCard(null);
     
     if (!over || !droppedCard) return;
@@ -122,9 +124,13 @@ export function KanbanBoard({ initialCards }: { initialCards: CardType[] }) {
 
     // Server-side database update required if card moved to new column
     if (newColumnId && droppedCard.columnId !== newColumnId) {
-      // Optimistic update fired during handleDragOver.
-      // Now fire persistent update.
-      await updatePatientStatus(droppedCard.id, newColumnId);
+      const result = await updatePatientStatus(droppedCard.id, newColumnId);
+      
+      if (!result.success) {
+        // Revert to original state if failed
+        setCards(originalCards);
+        alert("Erro ao salvar alteração. O card foi retornado à coluna original.");
+      }
     }
   };
 

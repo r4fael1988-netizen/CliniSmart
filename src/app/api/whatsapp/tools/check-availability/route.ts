@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-
+import { format, addMinutes, parse, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 
 export async function POST(req: Request) {
   try {
@@ -31,41 +31,54 @@ export async function POST(req: Request) {
       });
     }
 
-    // Pega o início e fim do dia para buscar os agendamentos existentes
     const targetDate = new Date(date);
-    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+    const dayOfWeek = format(targetDate, "eeee").toLowerCase(); // e.g. "monday"
 
-    // Busca agendamentos ocupados no dia
     const appointments = await prisma.appointment.findMany({
       where: {
         clinicId,
         doctorId: { in: doctors.map(d => d.id) },
-        scheduledAt: { gte: startOfDay, lte: endOfDay },
+        scheduledAt: { 
+          gte: startOfDay(targetDate), 
+          lte: endOfDay(targetDate) 
+        },
         status: { not: "cancelled" }
       }
     });
 
     const results = doctors.map(doctor => {
-      // Pega dias da semana do schedule JSON (ex: { "monday": ["09:00", "15:00"] })
-      // Simplificado: Assumimos que o médico atende das 09h às 18h se não tiver config específica.
-      const busySlots = appointments
-        .filter(a => a.doctorId === doctor.id)
-        .map(a => `${a.scheduledAt.getHours().toString().padStart(2, '0')}:${a.scheduledAt.getMinutes().toString().padStart(2, '0')}`);
+      const schedule = (doctor.schedule as any) || {};
+      const daySchedule = schedule[dayOfWeek] || { start: "09:00", end: "18:00" };
+      
+      const slots: string[] = [];
+      let current = parse(daySchedule.start, "HH:mm", targetDate);
+      const end = parse(daySchedule.end, "HH:mm", targetDate);
+      const duration = doctor.slotDurationMin || 30;
 
-      const allSlots = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"];
-      const freeSlots = allSlots.filter(slot => !busySlots.includes(slot));
+      while (isBefore(current, end)) {
+        const slotTime = format(current, "HH:mm");
+        
+        // Verifica se o slot está ocupado
+        const isOccupied = appointments.some(appt => {
+          return appt.doctorId === doctor.id && format(appt.scheduledAt, "HH:mm") === slotTime;
+        });
+
+        if (!isOccupied) {
+          slots.push(slotTime);
+        }
+        current = addMinutes(current, duration);
+      }
 
       return {
         doctorId: doctor.id,
         doctorName: doctor.name,
         specialty: doctor.specialty,
-        freeSlots
+        availableSlots: slots
       };
     });
 
     return NextResponse.json({ 
-      date: startOfDay.toISOString().split('T')[0],
+      date: format(targetDate, "yyyy-MM-dd"),
       doctors: results
     }, { status: 200 });
 

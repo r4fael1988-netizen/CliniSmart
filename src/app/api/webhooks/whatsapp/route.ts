@@ -94,6 +94,8 @@ export async function POST(req: Request) {
     if (settings.aiActive && !isFromMe) {
         const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE;
         if (n8nWebhookUrl) {
+           console.log(`Forwarding message from ${patientPhone} to n8n...`);
+           
            // Dispara async para não travar o webhook do Evolution
            fetch(n8nWebhookUrl, {
               method: 'POST',
@@ -109,7 +111,18 @@ export async function POST(req: Request) {
                 masterPrompt: settings.masterPrompt || "",
                 instance: instance
               })
-           }).catch(err => console.error("Error forwarding to n8n:", err));
+           }).then(async (res) => {
+              if (!res.ok) {
+                 const errText = await res.text();
+                 console.error(`n8n Webhook Error [${res.status}]:`, errText);
+              } else {
+                 console.log(`Successfully forwarded to n8n for patient ${patientPhone}`);
+              }
+           }).catch(err => {
+              console.error("Critical Error forwarding to n8n:", err.message);
+           });
+        } else {
+           console.warn("N8N_WEBHOOK_BASE not configured in environment.");
         }
     }
 

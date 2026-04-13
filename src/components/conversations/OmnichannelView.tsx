@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Search, Bot, Phone, Video, MoreVertical, Send, User, CheckCheck, Loader2, AlertCircle } from "lucide-react";
 import { getConversationMessages, takeOverConversation, handBackToAI, sendMessage } from "@/app/dashboard/conversations/actions";
 import { formatDistanceToNow, format } from "date-fns";
@@ -11,6 +12,7 @@ interface OmnichannelProps {
 }
 
 export function OmnichannelView({ initialConversations }: OmnichannelProps) {
+  const router = useRouter();
   const [activeChatId, setActiveChatId] = useState<string | null>(initialConversations[0]?.id || null);
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -20,17 +22,41 @@ export function OmnichannelView({ initialConversations }: OmnichannelProps) {
   const activeChat = initialConversations.find(c => c.id === activeChatId);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const loadMessages = async (id: string) => {
-    setIsLoadingMessages(true);
+  const loadMessages = async (id: string, silent = false) => {
+    if (!silent) setIsLoadingMessages(true);
     const msgs = await getConversationMessages(id);
     setMessages(msgs);
-    setIsLoadingMessages(false);
-    setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    if (!silent) setIsLoadingMessages(false);
+    
+    // Rola para o fim apenas se carregar inicialmente
+    if (!silent) {
+        setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    }
   };
 
   useEffect(() => {
     if (activeChatId) loadMessages(activeChatId);
   }, [activeChatId]);
+
+  // Polling para novas mensagens no chat aberto
+  useEffect(() => {
+    if (!activeChatId) return;
+    
+    const interval = setInterval(() => {
+        loadMessages(activeChatId, true);
+    }, 10000); // 10 segundos para mensagens
+
+    return () => clearInterval(interval);
+  }, [activeChatId]);
+
+  // Polling para atualizar a lista de conversas (sidebar)
+  useEffect(() => {
+    const interval = setInterval(() => {
+        router.refresh();
+    }, 30000); // 30 segundos para lista de contatos
+
+    return () => clearInterval(interval);
+  }, [router]);
 
   const handleTakeOver = async () => {
     if (!activeChatId) return;

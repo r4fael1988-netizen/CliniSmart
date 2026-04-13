@@ -130,3 +130,20 @@ export async function createAppointment(data: {
     return { error: "Ocorreu um erro técnico ao processar seu agendamento. Por favor, tente novamente." };
   }
 }
+
+export async function deleteAppointment(id: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.clinicId) return { error: "Não autorizado" };
+
+  try {
+    await prisma.appointment.delete({
+      where: { id, clinicId: session.user.clinicId }
+    });
+
+    revalidatePath("/dashboard/agenda");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    return { error: "Erro ao excluir agendamento." };
+  }
+}

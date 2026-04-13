@@ -30,13 +30,11 @@ export async function POST(req: Request) {
     const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
     const instanceName = process.env.EVOLUTION_INSTANCE_NAME || "ClinicaMaster";
 
-    // Uncomment para uso real em produção:
-    /*
     const response = await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${EVOLUTION_API_KEY}`
+        'apikey': `${EVOLUTION_API_KEY}`
       },
       body: JSON.stringify({
         number: patient.phone, // Formato exigido: 5511999999999
@@ -45,9 +43,10 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-       throw new Error("Evolution API failed to send message");
+       const errorData = await response.json().catch(() => ({}));
+       console.error("Evolution API Error Status:", response.status, errorData);
+       throw new Error(`Evolution API failed to send message: ${response.status}`);
     }
-    */
 
     // Se o envio for sucesso, atualizar o banco para aparecer no Omnichannel
     let conversation = await prisma.conversation.findFirst({
