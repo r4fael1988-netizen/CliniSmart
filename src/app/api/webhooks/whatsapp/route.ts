@@ -99,7 +99,10 @@ export async function POST(req: Request) {
            // Dispara async para não travar o webhook do Evolution
            fetch(n8nWebhookUrl, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`
+              },
               body: JSON.stringify({
                 clinicId: clinic.id,
                 clinicName: clinic.name,

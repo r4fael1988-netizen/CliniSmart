@@ -5,11 +5,15 @@ import { format, addMinutes, parse, isAfter, isBefore, startOfDay, endOfDay } fr
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+    console.log("Availability Tool Auth Header:", authHeader);
+
+    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`) {
+      console.warn("Availability Tool: Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { clinicId, date, specialty } = await req.json();
+    console.log("Availability Tool Input:", { clinicId, date });
 
     if (!clinicId || !date) {
       return NextResponse.json({ error: "Parâmetros clinicId e date são obrigatórios" }, { status: 400 });

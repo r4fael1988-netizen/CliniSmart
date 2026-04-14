@@ -4,14 +4,23 @@ import prisma from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+    console.log("History Tool Auth Header:", authHeader);
+
+    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`) {
+      console.warn("History Tool: Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { clinicId, patientPhone } = await req.json();
+    const body = await req.json();
+    console.log("History Tool Body:", JSON.stringify(body));
+    const { clinicId, patientPhone } = body;
 
     if (!clinicId || !patientPhone) {
-      return NextResponse.json({ error: "Parâmetros obrigatórios ausentes" }, { status: 400 });
+      console.error("History Tool: Missing required parameters", { clinicId, patientPhone });
+      return NextResponse.json({ 
+        error: "Parâmetros obrigatórios ausentes",
+        received: { clinicId: !!clinicId, patientPhone: !!patientPhone } 
+      }, { status: 400 });
     }
 
     // Busca o paciente
