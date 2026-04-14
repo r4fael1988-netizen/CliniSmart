@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+// Force Rebuild: 2026-04-14 - Final Stability Deploy
+
 
 export async function GET() {
   return NextResponse.json({

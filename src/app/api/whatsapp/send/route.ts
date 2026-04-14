@@ -38,9 +38,17 @@ export async function POST(req: Request) {
     }
 
     // Chamada REAL para Evolution API enviar a mensagem  
-    const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "http://localhost:8080";
-    const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY;
-    const instanceName = process.env.EVOLUTION_INSTANCE_NAME || "ClinicaMaster";
+    const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://lostbaskingshark-evolution.cloudfy.live";
+    const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "ZP2Vfc24UP1BtNZ6QlbISCVz0N9GW9BE";
+    const instanceName = process.env.EVOLUTION_INSTANCE_NAME || "SOFIA_CRM";
+
+    // Normalização do número de telefone (Garantir 55 e sem caracteres especiais)
+    let formattedNumber = patient.phone.replace(/\D/g, "");
+    if (!formattedNumber.startsWith("55")) {
+      formattedNumber = `55${formattedNumber}`;
+    }
+
+    console.log(`Sending message via Evolution [${instanceName}] to ${formattedNumber}`);
 
     const response = await fetch(`${EVOLUTION_API_URL}/message/sendText/${instanceName}`, {
       method: 'POST',
@@ -49,14 +57,14 @@ export async function POST(req: Request) {
         'apikey': `${EVOLUTION_API_KEY}`
       },
       body: JSON.stringify({
-        number: patient.phone, // Formato exigido: 5511999999999
+        number: formattedNumber,
         text: textMessage
       })
     });
 
     if (!response.ok) {
-       const errorData = await response.json().catch(() => ({}));
-       console.error("Evolution API Error Status:", response.status, errorData);
+       const errorText = await response.text();
+       console.error("Evolution API Error:", response.status, errorText);
        throw new Error(`Evolution API failed to send message: ${response.status}`);
     }
 
