@@ -94,37 +94,36 @@ export async function POST(req: Request) {
     // ENCAMINHAMENTO PARA AGENTE DE IA (n8n)
     const settings = (clinic.settings as any) || {};
     if (settings.aiActive && !isFromMe) {
-        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE;
+        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE || "";
         if (n8nWebhookUrl) {
-           console.log(`Forwarding message from ${patientPhone} to n8n...`);
-           
-           // Dispara async para não travar o webhook do Evolution
-           fetch(n8nWebhookUrl, {
-              method: 'POST',
-              headers: { 
-                 'Content-Type': 'application/json',
-                 'Authorization': `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`
-              },
-              body: JSON.stringify({
-                clinicId: clinic.id,
-                clinicName: clinic.name,
-                patientId: patient.id,
-                patientName: patient.fullName,
-                patientPhone: patientPhone,
-                message: textContent,
-                agentName: settings.agentName || "Sofia",
-                masterPrompt: settings.masterPrompt || "",
-                instance: instance
-              })
-           }).then(async (res) => {
-              if (!res.ok) {
-                 const errText = await res.text();
-                 console.error(`n8n Webhook Error [${res.status}]:`, errText);
-              } else {
-                 console.log(`Successfully forwarded to n8n for patient ${patientPhone}`);
-              }
-           }).catch(err => {
-              console.error("Critical Error forwarding to n8n:", err.message);
+           // MODO DE TRANSMISSÃO DUPLA: Produção e Teste
+           // Se a URL for de produção (sem o -test), geramos a de teste também
+           const urlsToNotify = [n8nWebhookUrl];
+           if (n8nWebhookUrl.includes('/webhook/') && !n8nWebhookUrl.includes('/webhook-test/')) {
+              urlsToNotify.push(n8nWebhookUrl.replace('/webhook/', '/webhook-test/'));
+           }
+
+           urlsToNotify.forEach(url => {
+              console.log(`Forwarding message from ${patientPhone} to n8n URL: ${url}`);
+              
+              fetch(url, {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`
+                  },
+                  body: JSON.stringify({
+                    clinicId: clinic.id,
+                    clinicName: clinic.name,
+                    patientId: patient.id,
+                    patientName: patient.fullName,
+                    patientPhone: patientPhone,
+                    message: textContent,
+                    agentName: settings.agentName || "Sofia",
+                    masterPrompt: settings.masterPrompt || "",
+                    instance: instance
+                  })
+              }).catch(err => console.error(`Error forwarding to ${url}:`, err.message));
            });
         } else {
            console.warn("N8N_WEBHOOK_BASE not configured in environment.");
