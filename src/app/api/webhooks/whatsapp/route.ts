@@ -1,54 +1,70 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-
-// Evolution API Integration / Webhook Receptor
+/**
+ * RECEPTOR DE WEBHOOK ULTRA-RESILIENTE (SOFIA CRM v3)
+ * Este endpoint recebe mensagens da Evolution API e as processa para o n8n.
+ * Projetado para ser tolerante a variações de payload da v1/v2.
+ */
 export async function POST(req: Request) {
   try {
-    // 1. Recebe payload vindo do Evolution API
     const payload = await req.json();
+    console.log("Webhook Received:", JSON.stringify(payload).substring(0, 200));
 
+    // 1. Validação de Segurança (com Fallback)
     const authHeader = req.headers.get("authorization");
     const validSecret = process.env.WEBHOOK_SECRET || "clini-smart-auth-2026";
     
     if (authHeader !== `Bearer ${validSecret}`) {
-      console.error("Tentativa de acesso não autorizado ao Webhook:", authHeader, "Esperado:", `Bearer ${validSecret}`);
+      console.error("Auth Fail. Received:", authHeader);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Estrutura Evolution API v2
-    const { instance, data, event } = payload;
+    // 2. Normalização do Evento (Independente de Case/Versão)
+    const rawEvent = payload.event || payload.evento || "";
+    const eventType = rawEvent.toString().toLowerCase();
     
-    const eventType = (event || "").toString().toLowerCase();
-    
-    if (eventType !== 'messages.upsert' && eventType !== 'messages_upsert') {
-      return NextResponse.json({ status: "ignored event type", event }, { status: 200 });
+    // Aceita mensagens novas (upsert)
+    if (!eventType.includes('messages.upsert') && !eventType.includes('messages_upsert')) {
+       return NextResponse.json({ status: "ignored event", event: rawEvent }, { status: 200 });
     }
 
-    const messageData = data.messages[0];
-    const remoteJid = messageData.key.remoteJid;
-    const pushName = messageData.pushName || "Desconhecido";
-    const textContent = messageData.message?.conversation || messageData.message?.extendedTextMessage?.text || "";
-    const isFromMe = messageData.key.fromMe;
+    // 3. Extração Segura de Dados (Data Mapping)
+    const instance = payload.instance || payload.instancia || "unknown";
+    const data = payload.data || payload.dados || {};
+    
+    // Tenta encontrar a mensagem em diferentes estruturas (v1 vs v2)
+    const messageData = (data.messages && data.messages[0]) || data;
+    const remoteJid = messageData.key?.remoteJid || messageData.remoteJid || "";
+    const pushName = messageData.pushName || payload.senderName || "Paciente";
+    const isFromMe = !!messageData.key?.fromMe;
 
-    if (!remoteJid || !textContent) {
-      return NextResponse.json({ status: "invalid message payload" }, { status: 200 });
+    // Conteúdo da Mensagem (Texto)
+    const textContent = 
+      messageData.message?.conversation || 
+      messageData.message?.extendedTextMessage?.text || 
+      messageData.content || 
+      "";
+
+    if (!remoteJid || isFromMe) {
+       return NextResponse.json({ status: "handled internally or invalid", isFromMe }, { status: 200 });
     }
 
     const patientPhone = remoteJid.split('@')[0];
 
-    // Busca clínica vinculada a esta instância do WhatsApp
+    // 4. Localização de Clínica e Paciente
     const clinic = await prisma.clinic.findFirst({
       where: { whatsappInstance: instance }
     });
 
     if (!clinic) {
-      return NextResponse.json({ error: "Clinic not found for this instance" }, { status: 404 });
+      console.error(`Clinic not found for instance: ${instance}`);
+      return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
     }
 
-    // Gerenciamento de Paciente/Lead
+    // Busca/Cria Paciente
     let patient = await prisma.patient.findFirst({
-      where: { clinicId: clinic.id, phone: { contains: patientPhone } }
+      where: { clinicId: clinic.id, phone: { contains: patientPhone.replace('55', '') } }
     });
 
     if (!patient) {
@@ -58,11 +74,12 @@ export async function POST(req: Request) {
           fullName: pushName,
           phone: patientPhone,
           email: `${patientPhone}@temp.clinismart.com`,
+          source: 'whatsapp'
         }
       });
     }
 
-    // Registro da Mensagem no CRM
+    // 5. Registro da Interação (Omnichannel)
     let conversation = await prisma.conversation.findFirst({
       where: { patientId: patient.id, status: 'active' }
     });
@@ -86,57 +103,52 @@ export async function POST(req: Request) {
         conversationId: conversation.id,
         channel: 'whatsapp',
         content: textContent,
-        direction: isFromMe ? 'outbound' : 'inbound',
-        handledBy: isFromMe ? 'human' : 'client'
+        direction: 'inbound',
+        handledBy: 'client'
       }
     });
 
-    // ENCAMINHAMENTO PARA AGENTE DE IA (n8n)
+    // 6. ENCAMINHAMENTO DUPLO (PRODUÇÃO + TESTE) PARA N8N
     const settings = (clinic.settings as any) || {};
-    if (settings.aiActive && !isFromMe) {
-        // Fallback robusto para URL do n8n caso a variável de ambiente esteja ausente
-        const DEFAULT_N8N_URL = "https://lostbaskingshark-n8n.cloudfy.live/webhook/crm-manager-agent-v1";
-        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE || DEFAULT_N8N_URL;
+    if (settings.aiActive) {
+        const DEFAULT_PROD_URL = "https://lostbaskingshark-n8n.cloudfy.live/webhook/crm-manager-agent-v1";
+        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE || DEFAULT_PROD_URL;
         
-        if (n8nWebhookUrl) {
-           // MODO DE TRANSMISSÃO DUPLA: Produção e Teste
-           // Se a URL for de produção (sem o -test), geramos a de teste também
-           const urlsToNotify = [n8nWebhookUrl];
-           if (n8nWebhookUrl.includes('/webhook/') && !n8nWebhookUrl.includes('/webhook-test/')) {
-              urlsToNotify.push(n8nWebhookUrl.replace('/webhook/', '/webhook-test/'));
-           }
-
-           urlsToNotify.forEach(url => {
-              console.log(`Forwarding message from ${patientPhone} to n8n URL: ${url}`);
-              
-              fetch(url, {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`
-                  },
-                  body: JSON.stringify({
-                    clinicId: clinic.id,
-                    clinicName: clinic.name,
-                    patientId: patient.id,
-                    patientName: patient.fullName,
-                    patientPhone: patientPhone,
-                    message: textContent,
-                    agentName: settings.agentName || "Sofia",
-                    masterPrompt: settings.masterPrompt || "",
-                    instance: instance
-                  })
-              }).catch(err => console.error(`Error forwarding to ${url}:`, err.message));
-           });
-        } else {
-           console.warn("N8N_WEBHOOK_BASE not configured in environment.");
+        // Gera as URLs de destino (Produção e Teste se possível)
+        const urlsToNotify = [n8nWebhookUrl];
+        if (n8nWebhookUrl.includes('/webhook/') && !n8nWebhookUrl.includes('/webhook-test/')) {
+           urlsToNotify.push(n8nWebhookUrl.replace('/webhook/', '/webhook-test/'));
         }
+
+        const forwardPayload = {
+          clinicId: clinic.id,
+          clinicName: clinic.name,
+          patientId: patient.id,
+          patientName: patient.fullName,
+          patientPhone: patientPhone,
+          message: textContent,
+          agentName: settings.agentName || "Sofia",
+          masterPrompt: settings.masterPrompt || "",
+          instance: instance
+        };
+
+        // Envia para todas as URLs mapeadas de forma assíncrona
+        urlsToNotify.forEach(url => {
+           fetch(url, {
+              method: 'POST',
+              headers: { 
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${process.env.WEBHOOK_SECRET || 'clini-smart-auth-2026'}`
+              },
+              body: JSON.stringify(forwardPayload)
+           }).catch(err => console.error(`Forwarding Fail to ${url}:`, err.message));
+        });
     }
 
-    return NextResponse.json({ success: true, message: "Interaction logged and forwarded" }, { status: 200 });
+    return NextResponse.json({ success: true }, { status: 200 });
 
   } catch (error) {
-    console.error("Evolution Webhook Error:", error);
+    console.error("Critical Webhook Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
