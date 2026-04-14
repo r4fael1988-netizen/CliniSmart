@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "instanceId": "cb33-4b81-b4b4-c22bdcdaf578"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-ai-bridge",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook CRM",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "ai-agent",
+      "name": "Sofia AI Agent",
+      "type": "n8n-nodes-base.aiAgent",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env[\"APP_URL\"] }}/api/whatsapp/tools/check-availability",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "clinicId", "value": "={{ $json[\"clinicId\"] }}" },
+            { "name": "date", "value": "={{ $json[\"date\"] }}" }
+          ]
+        }
+      },
+      "name": "Check Availability",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [750, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env[\"APP_URL\"] }}/api/whatsapp/tools/schedule",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "clinicId", "value": "={{ $json[\"clinicId\"] }}" },
+            { "name": "patientPhone", "value": "={{ $json[\"patientPhone\"] }}" },
+            { "name": "date", "value": "={{ $json[\"date\"] }}" },
+            { "name": "time", "value": "={{ $json[\"time\"] }}" }
+          ]
+        }
+      },
+      "name": "Schedule Appointment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [750, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env[\"APP_URL\"] }}/api/whatsapp/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "patientId", "value": "={{ $json[\"patientId\"] }}" },
+            { "name": "textMessage", "value": "={{ $json[\"output\"] }}" },
+            { "name": "sentBy", "value": "ia" }
+          ]
+        }
+      },
+      "id": "send-reply",
+      "name": "Send WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "ai-agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai-agent": {
+      "main": [
+        [
+          {
+            "node": "send-reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

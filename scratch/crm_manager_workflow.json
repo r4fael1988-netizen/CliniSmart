@@ -1,0 +1,269 @@
+{
+  "meta": {
+    "instanceId": "cb33-4b81-b4b4-c22bdcdaf578"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm-manager-agent-v1",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "CRM Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "={{ $json[\"masterPrompt\"] }}"
+        }
+      },
+      "id": "ai-agent",
+      "name": "Sofia Manager Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://clini-smart.vercel.app/api/whatsapp/tools/get-clinic-data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "clinicId", "value": "={{ $node[\"CRM Webhook\"].json[\"clinicId\"] }}" }
+          ]
+        }
+      },
+      "name": "get_clinic_data",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://clini-smart.vercel.app/api/whatsapp/tools/check-availability",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "clinicId", "value": "={{ $node[\"CRM Webhook\"].json[\"clinicId\"] }}" },
+            { "name": "date", "value": "={{ $json[\"date\"] }}" },
+            { "name": "specialty", "value": "={{ $json[\"specialty\"] }}" }
+          ]
+        }
+      },
+      "name": "check_availability",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://clini-smart.vercel.app/api/whatsapp/tools/schedule",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "clinicId", "value": "={{ $node[\"CRM Webhook\"].json[\"clinicId\"] }}" },
+            { "name": "patientPhone", "value": "={{ $node[\"CRM Webhook\"].json[\"patientPhone\"] }}" },
+            { "name": "date", "value": "={{ $json[\"date\"] }}" },
+            { "name": "time", "value": "={{ $json[\"time\"] }}" }
+          ]
+        }
+      },
+      "name": "schedule_appointment",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://clini-smart.vercel.app/api/whatsapp/tools/get-patient-history",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "clinicId", "value": "={{ $node[\"CRM Webhook\"].json[\"clinicId\"] }}" },
+            { "name": "patientPhone", "value": "={{ $node[\"CRM Webhook\"].json[\"patientPhone\"] }}" }
+          ]
+        }
+      },
+      "name": "get_patient_history",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://clini-smart.vercel.app/api/whatsapp/tools/cancel-appointment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "appointmentId", "value": "={{ $json[\"appointmentId\"] }}" },
+            { "name": "patientPhone", "value": "={{ $node[\"CRM Webhook\"].json[\"patientPhone\"] }}" }
+          ]
+        }
+      },
+      "name": "cancel_appointment",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://clini-smart.vercel.app/api/whatsapp/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "patientId", "value": "={{ $node[\"CRM Webhook\"].json[\"patientId\"] }}" },
+            { "name": "textMessage", "value": "={{ $json[\"output\"] }}" },
+            { "name": "sentBy", "value": "ia" }
+          ]
+        }
+      },
+      "id": "send-reply",
+      "name": "Send Reply to CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {}
+      },
+      "id": "model",
+      "name": "OpenAI Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [300, 500]
+    },
+    {
+      "parameters": {},
+      "id": "memory",
+      "name": "Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [450, 500]
+    }
+  ],
+  "connections": {
+    "CRM Webhook": {
+      "main": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Model": {
+      "chatModel": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "chatModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory": {
+      "memory": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_clinic_data": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "schedule_appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_patient_history": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cancel_appointment": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sofia Manager Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sofia Manager Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Reply to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

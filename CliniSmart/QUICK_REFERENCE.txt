@@ -1,0 +1,133 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    QUICK REFERENCE - Erro "URL inválida"
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 OBJETIVO: Corrigir erro "URL inválida" no workflow Sofia v3
+
+───────────────────────────────────────────────────────────────────────────────
+1️⃣  EXECUTE TESTE RÁPIDO
+───────────────────────────────────────────────────────────────────────────────
+
+cd /seu/caminho/CliniSmart
+node test-api-endpoints.js http://localhost:3000 SOFIA_CRM 5511987654321
+
+───────────────────────────────────────────────────────────────────────────────
+2️⃣  LEIA O RESULTADO
+───────────────────────────────────────────────────────────────────────────────
+
+Status 200/201  ✅  → Endpoint OK, erro em outro lugar
+Status 400      ❌  → clinicId inválido → VER SOLUÇÃO A
+Status 404      ❌  → Endpoint não existe → VER SOLUÇÃO B
+Status 500      ❌  → Erro no backend → Ver logs
+Timeout         ❌  → API não está rodando
+
+───────────────────────────────────────────────────────────────────────────────
+SOLUÇÃO A: clinicId é inválido (Status 400)
+───────────────────────────────────────────────────────────────────────────────
+
+1. Descubra o ID real:
+   psql -U usuario -d clinismart -c "SELECT id, name FROM clinics;"
+
+2. Se SOFIA_CRM = id 1, atualizar no n8n:
+   // NO WORKFLOW SOFIA:
+   // Clique: CRM Webhook Trigger → Edit
+   // Procure: clinicId expression
+   // ANTES: {{ $node["CRM Webhook Trigger"].json.corpo.instância }}
+   // DEPOIS: {{ "1" }}  ← ou o ID correto
+
+3. Ou use mapeamento:
+   {{ ({
+     "SOFIA_CRM": "1",
+     "OUTRO_CRM": "2"
+   })[$node["CRM Webhook Trigger"].json.corpo.instância] }}
+
+───────────────────────────────────────────────────────────────────────────────
+SOLUÇÃO B: Endpoint não existe (Status 404)
+───────────────────────────────────────────────────────────────────────────────
+
+1. Encontre os endpoints corretos:
+   find /src -name "*.ts" -o -name "*.js" | xargs grep -l "whatsapp.*tools"
+
+2. Procure em:
+   src/app/api/
+   src/routes.ts
+   src/routes/
+
+3. Exemplo de estrutura esperada:
+   /api/whatsapp/tools/get-clinic-data
+   /api/crm/tools/clinic-info
+   /api/v1/tools/get-clinic-data
+
+4. Atualize no n8n com o caminho correto
+
+───────────────────────────────────────────────────────────────────────────────
+SOLUÇÃO C: Erro interno (Status 500)
+───────────────────────────────────────────────────────────────────────────────
+
+Ver logs:
+  Docker:  docker logs clinismart-api -f
+  PM2:     pm2 logs
+  Node:    npm run dev  (ver console)
+
+───────────────────────────────────────────────────────────────────────────────
+⚡ COMANDOS ÚTEIS
+───────────────────────────────────────────────────────────────────────────────
+
+Testar endpoint com Curl:
+  curl -X POST http://localhost:3000/api/whatsapp/tools/get-clinic-data \
+    -H "Content-Type: application/json" \
+    -d '{"clinicId":"SOFIA_CRM","patientPhone":"5511987654321"}'
+
+Ver clínicas no banco:
+  psql -U usuario -d clinismart -c "SELECT id, name, instance_name FROM clinics;"
+
+Reiniciar API:
+  docker restart clinismart-api
+  # ou
+  pm2 restart clinismart
+
+Checar se API está rodando:
+  docker ps | grep clinismart
+  # ou
+  curl -s http://localhost:3000 && echo "API OK" || echo "API DOWN"
+
+───────────────────────────────────────────────────────────────────────────────
+📋 CHECKLIST DE CORREÇÃO
+───────────────────────────────────────────────────────────────────────────────
+
+[ ] Executei: node test-api-endpoints.js
+[ ] Identifiquei o status da resposta (200, 400, 404, 500)
+[ ] Se 400: Encontrei o ID real da clínica
+[ ] Se 404: Encontrei os endpoints corretos
+[ ] Se 500: Verifiquei os logs
+[ ] Atualizei o workflow Sofia no n8n
+[ ] Salvei as mudanças
+[ ] Testei novamente com mensagem WhatsApp
+[ ] Verifiquei em "Executions" se funcionou
+
+───────────────────────────────────────────────────────────────────────────────
+📁 ARQUIVOS PARA REFERÊNCIA
+───────────────────────────────────────────────────────────────────────────────
+
+README_DEBUGGING.md              ← Comece por aqui (índice completo)
+ANALISE_ERRO_URL_INVALIDA.md    ← Explicação detalhada das 3 hipóteses
+DEBUG_WORKFLOW_SOFIA.md          ← Guia passo-a-passo no n8n
+INSTRUCOES_EXECUCAO_TESTES.md   ← Como rodar os testes
+test-api-endpoints.js           ← Script de teste (Execute isto!)
+test-api-endpoints.sh           ← Versão Bash do script
+
+───────────────────────────────────────────────────────────────────────────────
+🆘 PIOR CENÁRIO - Não Conseguiu Resolver?
+───────────────────────────────────────────────────────────────────────────────
+
+Colete informações:
+  1. node test-api-endpoints.js > resultado.txt 2>&1
+  2. docker logs clinismart-api > logs.txt 2>&1
+  3. Screenshot do erro no n8n (Executions)
+  4. psql -U user -d clinismart -c "SELECT * FROM clinics;" > clinics.txt
+
+Compartilhe esses dados com seu time de suporte.
+
+═══════════════════════════════════════════════════════════════════════════════
+                              BOM SORTE! 🚀
+═══════════════════════════════════════════════════════════════════════════════

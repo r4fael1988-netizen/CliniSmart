@@ -1,0 +1,225 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║                    🎯 COMECE POR ESTE ARQUIVO 🎯                             ║
+║                                                                               ║
+║             Erro "URL inválida" no Workflow Sofia - Debug Completo           ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📚 ÍNDICE COMPLETO DE DOCUMENTAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+Escolha o caminho que melhor se encaixa no seu problema:
+
+┌─ 🚀 CAMINHO RÁPIDO (5 minutos)
+│
+├─ 1. Leia: QUICK_REFERENCE.txt
+│      └─ Resumo em 1 página de tudo que precisa fazer
+│
+├─ 2. Execute: node test-api-endpoints.js http://localhost:3000 SOFIA_CRM 5511987654321
+│      └─ Descubra qual é exatamente o erro
+│
+└─ 3. Procure a solução em: ANALISE_ERRO_URL_INVALIDA.md
+       └─ Solução A, B ou C conforme o erro
+
+
+┌─ 🔍 CAMINHO INTERMEDIÁRIO (20 minutos)
+│
+├─ 1. Leia: README_DEBUGGING.md
+│      └─ Visão geral de todos os arquivos
+│
+├─ 2. Estude: ANALISE_ERRO_URL_INVALIDA.md
+│      └─ Entenda as 3 hipóteses principais
+│
+├─ 3. Implemente: EXEMPLO_CORRECOES_N8N.md
+│      └─ Veja exemplos práticos de como mudar o workflow
+│
+└─ 4. Teste: Execute novamente o script
+
+
+┌─ 🔬 CAMINHO COMPLETO (1-2 horas, para entender tudo)
+│
+├─ 1. Comece: README_DEBUGGING.md (visão geral)
+├─ 2. Entenda: ANALISE_ERRO_URL_INVALIDA.md (análise profunda)
+├─ 3. Pratique: EXEMPLO_CORRECOES_N8N.md (implementação)
+├─ 4. Teste: test-api-endpoints.js (validação)
+├─ 5. Debug: DEBUG_WORKFLOW_SOFIA.md (se ainda tiver erro)
+└─ 6. Execute: INSTRUCOES_EXECUCAO_TESTES.md (instruções completas)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 MAPA DE ARQUIVOS
+═══════════════════════════════════════════════════════════════════════════════
+
+├─ 📄 COMECE_AQUI.txt  ← Você está aqui!
+│
+├─ 🚀 QUICK_REFERENCE.txt
+│   └─ Resumo rápido (imprima e coloque na frente)
+│
+├─ 📖 README_DEBUGGING.md
+│   └─ Índice completo + fluxograma de debug
+│
+├─ 🔍 ANALISE_ERRO_URL_INVALIDA.md
+│   └─ 3 hipóteses + checklist + 3 soluções (A, B, C)
+│
+├─ 🔧 EXEMPLO_CORRECOES_N8N.md
+│   └─ Como corrigir no n8n (passo-a-passo com exemplos)
+│
+├─ 🐛 DEBUG_WORKFLOW_SOFIA.md
+│   └─ Guia passo-a-passo para debugar via interface n8n
+│
+├─ 📋 INSTRUCOES_EXECUCAO_TESTES.md
+│   └─ Como rodar os testes no seu servidor
+│
+├─ 🧪 test-api-endpoints.js
+│   └─ Script Node.js para testar API (EXECUTE ESTE!)
+│
+├─ 🧪 test-api-endpoints.sh
+│   └─ Script Bash (alternativa ao Node.js)
+│
+└─ 📊 ANALISE_ERRO_URL_INVALIDA.md
+   └─ Análise detalhada das causas e soluções
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 QUAL ARQUIVO DEVO LER PRIMEIRO?
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─ Se está com PRESSA:
+│  → Leia: QUICK_REFERENCE.txt
+│  → Execute: node test-api-endpoints.js
+│  → Implemente: EXEMPLO_CORRECOES_N8N.md
+│
+├─ Se quer entender A RAIZ do problema:
+│  → Leia: ANALISE_ERRO_URL_INVALIDA.md
+│  → Estude as 3 hipóteses
+│  → Execute: test-api-endpoints.js
+│
+├─ Se quer um GUIA PASSO-A-PASSO:
+│  → Leia: README_DEBUGGING.md (índice)
+│  → Siga: DEBUG_WORKFLOW_SOFIA.md
+│  → Execute: test-api-endpoints.js
+│
+└─ Se prefere EXEMPLOS PRÁTICOS:
+   → Leia: EXEMPLO_CORRECOES_N8N.md
+   → Antes/depois de cada mudança
+   → Execute para validar
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⚡ INÍCIO RÁPIDO (RECOMENDADO)
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  Copie os arquivos para seu servidor:
+    
+    Copie toda a pasta CliniSmart para:
+    /seu-servidor/projetos/CliniSmart
+
+2️⃣  Rode o teste:
+    
+    cd /seu-servidor/projetos/CliniSmart
+    node test-api-endpoints.js http://localhost:3000 SOFIA_CRM 5511987654321
+
+3️⃣  Veja o resultado:
+    
+    Se Status 400: Veja Solução A em ANALISE_ERRO_URL_INVALIDA.md
+    Se Status 404: Veja Solução B em ANALISE_ERRO_URL_INVALIDA.md
+    Se Status 500: Veja logs da API
+
+4️⃣  Implemente a correção:
+    
+    Abra: EXEMPLO_CORRECOES_N8N.md
+    Vá para seu workflow Sofia no n8n
+    Faça as mudanças conforme o exemplo
+
+5️⃣  Teste novamente:
+    
+    node test-api-endpoints.js ...
+    (deve retornar Status 200 agora)
+
+6️⃣  Valide no workflow:
+    
+    Envie uma mensagem via WhatsApp
+    Verifique se a resposta foi enviada ao CRM
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 POSSÍVEIS RESULTADOS DO TESTE
+═══════════════════════════════════════════════════════════════════════════════
+
+Status 200/201
+  ✅ SUCESSO - O endpoint funciona!
+  → Procure o erro em outro lugar (talvez autenticação, validação)
+  → Consulte: DEBUG_WORKFLOW_SOFIA.md
+
+Status 400
+  ❌ ERRO - API rejeitou os dados
+  → Erro típico: "Invalid clinic ID: SOFIA_CRM"
+  → Solução: Mapear SOFIA_CRM para ID numérico
+  → Consulte: ANALISE_ERRO_URL_INVALIDA.md → Solução A
+
+Status 404
+  ❌ ERRO - Endpoint não existe nesse caminho
+  → Erro típico: "Not Found"
+  → Solução: Encontrar os endpoints corretos
+  → Consulte: ANALISE_ERRO_URL_INVALIDA.md → Solução B
+
+Status 500
+  ❌ ERRO - Erro interno da API
+  → Erro típico: "Internal Server Error"
+  → Solução: Verificar logs da API
+  → Consulte: ANALISE_ERRO_URL_INVALIDA.md → Solução C
+
+Timeout
+  ❌ ERRO - Não consegue conectar
+  → Erro típico: "ECONNREFUSED" ou "connect timeout"
+  → Solução: API não está rodando ou URL está errada
+  → Consulte: INSTRUCOES_EXECUCAO_TESTES.md
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🆘 PRECISO DE AJUDA!
+═══════════════════════════════════════════════════════════════════════════════
+
+Se depois de ler tudo isso ainda não conseguiu resolver:
+
+1. Colete dados:
+   - Saída do teste: node test-api-endpoints.js > resultado.txt 2>&1
+   - Logs da API: docker logs clinismart-api > logs.txt 2>&1
+   - Screenshot do erro no n8n (Executions)
+
+2. Compartilhe esses arquivos com seu time
+
+3. Cole a informação seguinte:
+
+   Teste executado em: [data/hora]
+   URL testada: http://localhost:3000
+   Clinic ID: SOFIA_CRM
+   Status recebido: [200/400/404/500/timeout]
+   Mensagem de erro: [exata]
+   Ação realizada: [que você fez]
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📞 RESUMO
+═══════════════════════════════════════════════════════════════════════════════
+
+| Passo | Ação | Arquivo |
+|-------|------|---------|
+| 1 | Copie para seu servidor | Todos os .md e .js |
+| 2 | Execute teste | node test-api-endpoints.js |
+| 3 | Identifique o erro | ANALISE_ERRO_URL_INVALIDA.md |
+| 4 | Implemente correção | EXEMPLO_CORRECOES_N8N.md |
+| 5 | Teste novamente | node test-api-endpoints.js |
+| 6 | Valide | Mensagem WhatsApp |
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                    ✨ BOM LUCK & BOA SORTE! ✨
+                          
+                  Comece por: QUICK_REFERENCE.txt
+                  ou: README_DEBUGGING.md
+
+═══════════════════════════════════════════════════════════════════════════════

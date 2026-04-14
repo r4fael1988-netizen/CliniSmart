@@ -1,0 +1,191 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║                    🚀 DEIXAR SOFIA ONLINE EM 5 MINUTOS 🚀                     ║
+║                                                                               ║
+║                Workflow funcionando em produção (Vercel)                      ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📋 O QUE FOI CRIADO
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ setup-online.sh - Script que valida tudo
+✅ auto-fix-workflow.js - Script que corrige o workflow via API
+✅ Toda a documentação anterior
+
+═══════════════════════════════════════════════════════════════════════════════
+⚡ EXECUÇÃO (ESCOLHA UMA OPÇÃO)
+═══════════════════════════════════════════════════════════════════════════════
+
+OPÇÃO 1: VALIDAR TUDO E DESCOBRIR PROBLEMAS
+─────────────────────────────────────────────
+
+Execute no seu servidor:
+
+    cd /seu/caminho/CliniSmart
+    ./setup-online.sh
+
+Resultado esperado:
+    ✓ Node.js: v22.x.x
+    ✓ PostgreSQL: Conectado
+    ✓ Clinic ID descoberto: 1
+    ✓ API respondendo (Status: 200)
+
+Se algo falhar, o script dirá exatamente o que está errado.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OPÇÃO 2: ATUALIZAR AUTOMATICAMENTE O WORKFLOW
+──────────────────────────────────────────────
+
+Execute no seu servidor (PRECISA DA CHAVE DE API DO N8N):
+
+    cd /seu/caminho/CliniSmart
+    N8N_API_KEY=sua_chave_de_api_do_n8n node auto-fix-workflow.js
+
+O que o script faz:
+    1. Conecta ao n8n via API
+    2. Obtém o workflow Sofia
+    3. Atualiza o clinic_id
+    4. Salva as mudanças
+    5. Deixa pronto para usar
+
+Resultado esperado:
+    ✓ API respondendo normalmente
+    ✓ Clinic ID descoberto: 1
+    ✓ Workflow obtido com sucesso
+    ✓ Workflow atualizado com sucesso!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OPÇÃO 3: FAZER MANUALMENTE (SEM SCRIPT)
+───────────────────────────────────────
+
+Se preferir fazer pelo n8n:
+
+    1. Acesse: http://seu-n8n:5678
+    2. Abra: Sofia - Gestora de CRM v3 (PRODUÇÃO)
+    3. Clique no nó: CRM Webhook Trigger
+    4. Procure pela expressão de clinicId
+    5. Mude:
+       DE: {{ $node["CRM Webhook Trigger"].json.corpo.instância }}
+       PARA: {{ "1" }}  ← (use o ID descoberto no setup)
+    6. Salve (Ctrl+S)
+    7. Pronto!
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 COMO DESCOBRIR A CHAVE DE API DO N8N
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Acesse o n8n: http://seu-n8n:5678
+2. Vá para: Settings (Configurações) → API Keys
+3. Crie uma nova chave ou copie uma existente
+4. Use assim: N8N_API_KEY=sua_chave node auto-fix-workflow.js
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ CHECKLIST - DEIXAR ONLINE
+═══════════════════════════════════════════════════════════════════════════════
+
+[ ] 1. Copiei os scripts para o servidor
+[ ] 2. Executei: ./setup-online.sh
+[ ] 3. Validei que API está online
+[ ] 4. Validei que clinic_id foi descoberto
+[ ] 5. Executei: node auto-fix-workflow.js OU fiz manualmente
+[ ] 6. Salvei as mudanças no n8n
+[ ] 7. Testei enviando mensagem via WhatsApp
+[ ] 8. Recebi resposta no WhatsApp
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 APÓS COMPLETAR - VALIDAÇÃO FINAL
+═══════════════════════════════════════════════════════════════════════════════
+
+Envie uma mensagem de teste pelo WhatsApp:
+    "Olá, gostaria de agendar uma consulta"
+
+Verifique no n8n:
+    1. Vá para: Executions (Execuções)
+    2. Procure a execução mais recente
+    3. Todos os nós devem estar ✓ verdes
+
+Você receberá uma resposta do Sofia no WhatsApp! 🎉
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 STATUS DO PROJETO
+═══════════════════════════════════════════════════════════════════════════════
+
+Workflow Sofia v3:
+    [✓] Nós de ferramentas configurados
+    [✓] AI Agent pronto
+    [✓] Integração com API CliniSmart
+    [✓] Webhook da Evolution API
+    [✓] Memória de conversa
+    [?] Clinic ID (será configurado agora)
+
+Após execução deste script:
+    [✓] Tudo pronto para produção
+
+═══════════════════════════════════════════════════════════════════════════════
+💡 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Se o script mostrar erro:
+
+    ❌ "Node.js não está instalado"
+    → Instale: brew install node (Mac) ou apt install nodejs (Linux)
+
+    ❌ "PostgreSQL: Não conseguiu conectar"
+    → Não é crítico, use clinic_id=1 como padrão
+    → Ou acesse manualmente: psql -U usuario -d clinismart
+
+    ❌ "API retornou: 000"
+    → API está offline ou URL está errada
+    → Verifique: curl https://clini-smart.vercel.app/api/health
+
+    ❌ "N8N_API_KEY não foi definida"
+    → Obtenha a chave no n8n Settings → API Keys
+    → Execute: N8N_API_KEY=sua_chave node auto-fix-workflow.js
+
+    ❌ "Workflow não foi atualizado"
+    → Faça manualmente (OPÇÃO 3)
+    → Ou procure a chave de API correta
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 RESUMO PARA VOCÊ COPIAR & COLAR
+═══════════════════════════════════════════════════════════════════════════════
+
+Passo 1: Validar tudo
+```bash
+cd /seu/caminho/CliniSmart
+chmod +x setup-online.sh
+./setup-online.sh
+```
+
+Passo 2: Atualizar workflow (se tiver chave de API)
+```bash
+N8N_API_KEY=sua_chave_aqui node auto-fix-workflow.js
+```
+
+Passo 3: Testar
+- Envie mensagem no WhatsApp
+- Verifique resposta em 10 segundos
+
+═══════════════════════════════════════════════════════════════════════════════
+✨ ARQUIVO PARA ENVIAR AO SEU SERVIDOR
+═══════════════════════════════════════════════════════════════════════════════
+
+Copie estes arquivos para produção:
+
+    setup-online.sh
+    auto-fix-workflow.js
+    test-api-endpoints.js
+
+E execute:
+    ./setup-online.sh
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                    🎉 PRONTO PARA DEIXAR ONLINE! 🎉
+
+            Execute: ./setup-online.sh && node auto-fix-workflow.js
+
+═══════════════════════════════════════════════════════════════════════════════

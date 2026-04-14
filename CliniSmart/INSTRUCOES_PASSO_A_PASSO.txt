@@ -1,0 +1,428 @@
+═══════════════════════════════════════════════════════════════════════════════
+            🚀 INSTRUÇÕES PASSO-A-PASSO PARA EXECUTAR TUDO
+═══════════════════════════════════════════════════════════════════════════════
+
+Tempo total: 30 minutos
+Dificuldade: Fácil
+Resultado: Workflow Sofia funcionando 100%
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 1: VERIFIQUE OS PRÉ-REQUISITOS (5 minutos)
+═══════════════════════════════════════════════════════════════════════════════
+
+1.1 Verifique se a API do CliniSmart está rodando:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+
+    # Se usar Docker:
+    docker ps | grep -i "clinismart\|api"
+
+    # Se usar Node/npm:
+    ps aux | grep node
+
+    ESPERADO: Você vê a API rodando em alguma porta (3000, 5000, 8000, etc.)
+    NÃO VÊ NADA? Inicie a API:
+    - Docker: docker-compose up -d
+    - Node: npm run dev
+    - PM2: pm2 start app.js
+
+1.2 Verifique se o n8n está rodando:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    docker ps | grep n8n
+    # ou
+    ps aux | grep n8n
+
+    NÃO VÊ NADA? Inicie o n8n:
+    - Docker: docker-compose up -d
+    - Node: npm run start
+
+1.3 Verifique se PostgreSQL está rodando:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    psql -U seu-usuario -d clinismart -c "SELECT 1;"
+    # Se usar Docker: docker exec clinismart-db psql -U usuario -d clinismart -c "SELECT 1;"
+
+    ESPERADO: Você vê: 1
+    ERRO? Inicie o PostgreSQL:
+    - Docker: docker-compose up -d postgres
+    - Windows/Mac: Abra o app do PostgreSQL
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 2: DESCUBRA A PORTA DA API (5 minutos)
+═══════════════════════════════════════════════════════════════════════════════
+
+2.1 Identifique a porta:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    lsof -i -P -n | grep node
+    # ou
+    netstat -tlnp | grep node
+
+    PROCURE POR: Algo como "LISTEN ... 127.0.0.1:3000" ou "LISTEN ... 0.0.0.0:5000"
+
+    ANOTE A PORTA (ex: 3000, 5000, 8000)
+
+2.2 Teste a conexão com a API:
+
+    COPIE E COLE (substitua 3000 pela porta):
+    ──────────────────────────────────────────
+    curl -s http://localhost:3000/api/health && echo "✅ API OK" || echo "❌ API FORA"
+
+    ESPERADO: ✅ API OK
+    RECEBEU ❌ ? A porta está errada ou a API não está rodando
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 3: DESCUBRA O ID REAL DA CLÍNICA (5 minutos)
+═══════════════════════════════════════════════════════════════════════════════
+
+3.1 Veja quais clínicas existem:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    psql -U seu-usuario -d clinismart -c "SELECT id, name, instance_name FROM clinics;"
+
+    # OU se usar Docker:
+    docker exec clinismart-db psql -U usuario -d clinismart -c "SELECT id, name FROM clinics;"
+
+    RESULTADO ESPERADO:
+    ──────────────────
+    id | name           | instance_name
+    ---+----------------+-------------------
+     1 | Clínica XYZ    | SOFIA_CRM
+     2 | Clínica ABC    | OUTRO_CRM
+
+3.2 ANOTE:
+
+    ✏️ Para SOFIA_CRM, qual é o ID? ______ (provavelmente é 1)
+
+    IMPORTANTE: Use este ID nos próximos passos!
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 4: EXECUTE O TESTE AUTOMATIZADO (5 minutos)
+═══════════════════════════════════════════════════════════════════════════════
+
+4.1 Entre na pasta do projeto:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    cd /seu/caminho/para/CliniSmart
+    # exemplo: cd ~/projetos/CliniSmart
+    # ou: cd /opt/CliniSmart
+
+4.2 Execute o teste (substitua pelos valores descobertos):
+
+    COPIE E COLE (MUDE 3000 E 1 pelos valores corretos):
+    ────────────────────────────────────────────────────
+    node test-api-endpoints.js http://localhost:3000 1 5511987654321
+
+    # Exemplo real:
+    # node test-api-endpoints.js http://localhost:3000 1 5511987654321
+    # node test-api-endpoints.js http://192.168.1.100:5000 2 5521999887766
+
+4.3 Aguarde o resultado:
+
+    PROCURE POR:
+    ──────────
+
+    ✓ Passou: 5
+    ✗ Falhou: 0
+
+    ↓ SE VIU ISTO: PARABÉNS! Vá para PASSO 5
+
+    ─────────────────────────────────────
+
+    ✓ Passou: 0
+    ✗ Falhou: 5
+
+    ↓ SE VIU ISTO: Há um problema
+
+    📋 PROCURE PELO STATUS:
+       - Status 400 → Vá para PASSO 5A (clinicId inválido)
+       - Status 404 → Vá para PASSO 5B (endpoint não existe)
+       - Status 500 → Vá para PASSO 5C (erro na API)
+       - Timeout   → Vá para PASSO 5D (não consegue conectar)
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 5A: CORRIGIR SE STATUS 400 (clinicId inválido)
+═══════════════════════════════════════════════════════════════════════════════
+
+5A.1 Abra o navegador:
+
+    COPIE E COLE:
+    ─────────────
+    http://seu-n8n:5678
+
+    # Se está local: http://localhost:5678
+    # Se está em outro servidor: http://192.168.1.100:5678
+
+5A.2 Procure o workflow:
+
+    CLIQUE EM:
+    ──────────
+    - No menu à esquerda, procure "Sofia - Gestora de CRM v3"
+    - Clique para abrir
+
+5A.3 Edite o nó "CRM Webhook Trigger":
+
+    CLIQUE NO NÓ:
+    ─────────────
+    - Procure o nó azul chamado "CRM Webhook Trigger"
+    - Clique nele
+
+    PROCURE A EXPRESSÃO DE clinicId:
+    ────────────────────────────────
+    Procure por algo assim:
+    {{ $node["CRM Webhook Trigger"].json.corpo.instância }}
+
+    MUDE PARA (use o ID descoberto em Passo 3):
+    ───────────────────────────────────────────
+    {{ "1" }}
+
+    # OU se for ID diferente:
+    {{ "2" }}
+    {{ "100" }}
+
+5A.4 Salve:
+
+    TECLE:
+    ──────
+    Ctrl+S  (Windows/Linux)
+    Cmd+S   (Mac)
+
+    OU procure botão "Save" no n8n
+
+5A.5 Teste novamente:
+
+    VOLTE AO TERMINAL E EXECUTE:
+    ────────────────────────────
+    node test-api-endpoints.js http://localhost:3000 1 5511987654321
+
+    ESPERADO: Status 200 ✓ Passou: 5
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 5B: CORRIGIR SE STATUS 404 (endpoint não existe)
+═══════════════════════════════════════════════════════════════════════════════
+
+5B.1 Procure pelos endpoints corretos:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    find /seu/caminho/CliniSmart/src -name "*.ts" | xargs grep -l "get-clinic-data\|whatsapp.*tools"
+
+    # Exemplo:
+    find ~/projetos/CliniSmart/src -name "*.ts" | xargs grep -l "whatsapp"
+
+    ANOTE OS ARQUIVOS ENCONTRADOS:
+    ──────────────────────────────
+    (estes contêm os endpoints)
+
+5B.2 Verifique qual é o endpoint correto:
+
+    COPIE E COLE (substitua o caminho):
+    ───────────────────────────────────
+    cat /seu/caminho/CliniSmart/src/app/api/whatsapp/tools/get-clinic-data.ts
+
+    PROCURE PELA ROTA:
+    ──────────────────
+    // Procure por algo como:
+    // router.post("/api/whatsapp/tools/get-clinic-data", ...)
+    // ou
+    // export default function GET_CLINIC_DATA(req, res) { ... }
+
+5B.3 Atualize os nós no n8n:
+
+    NO n8n WORKFLOW:
+    ────────────────
+    - Clique em cada nó de ferramenta (get_clinic_data, schedule, etc.)
+    - Mude a URL para o endpoint correto
+
+    EXEMPLO:
+    ────────
+    De: /api/whatsapp/tools/get-clinic-data
+    Para: /api/crm/tools/get-clinic-data (conforme encontrado)
+
+5B.4 Salve e teste novamente
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 5C: CORRIGIR SE STATUS 500 (erro interno)
+═══════════════════════════════════════════════════════════════════════════════
+
+5C.1 Veja os logs da API:
+
+    COPIE E COLE NO TERMINAL:
+    ──────────────────────────
+    docker logs clinismart-api -f
+
+    # OU se usar Node/PM2:
+    npm run dev
+    pm2 logs
+
+    # OU se estiver rodando manualmente:
+    Veja a janela do terminal onde a API está rodando
+
+5C.2 Procure por erros (linhas vermelhas ou com "ERROR"):
+
+    PROCURE POR:
+    ────────────
+    - "ERROR"
+    - "Exception"
+    - "400"
+    - "Invalid"
+    - Stack traces (linhas grandes com código)
+
+5C.3 Corrija o problema indicado nos logs
+
+    EXEMPLOS COMUNS:
+    ────────────────
+    - "Invalid clinic ID" → Mesma solução do Passo 5A
+    - "Database connection" → Reinicie PostgreSQL
+    - "Missing parameter" → Falta dados no payload
+
+5C.4 Teste novamente
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 5D: CORRIGIR SE TIMEOUT (não consegue conectar)
+═══════════════════════════════════════════════════════════════════════════════
+
+5D.1 Verifique se a porta está certa:
+
+    O teste está tentando conectar em http://localhost:3000 ?
+    A API realmente está rodando nesta porta?
+
+    EXECUTE:
+    ────────
+    node test-api-endpoints.js http://localhost:PORTA_CORRETA 1 5511987654321
+
+    # Tente diferentes portas: 3000, 5000, 8000, 8080, etc.
+
+5D.2 Se ainda não conecta, reinicie a API:
+
+    DOCKER:
+    ───────
+    docker restart clinismart-api
+
+    NODE/NPM:
+    ─────────
+    npm run dev
+
+    PM2:
+    ────
+    pm2 restart clinismart
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 6: VALIDAR EM TEMPO REAL (5 minutos)
+═══════════════════════════════════════════════════════════════════════════════
+
+6.1 Envie uma mensagem de teste via WhatsApp:
+
+    PEGUE SEU CELULAR:
+    ──────────────────
+    1. Abra WhatsApp
+    2. Procure o número configurado na Evolution API (ex: +55 11 98765-4321)
+    3. Envie uma mensagem, por exemplo: "Olá, gostaria de agendar uma consulta"
+    4. AGUARDE resposta (pode levar 5-10 segundos)
+
+6.2 Verifique a execução no n8n:
+
+    NO n8n:
+    ───────
+    1. Acesse http://seu-n8n:5678
+    2. Vá para a aba "Executions" (Execuções)
+    3. Procure a execução mais recente (topo da lista)
+    4. Clique nela para expandir
+
+6.3 Verifique os nós:
+
+    PROCURE POR:
+    ────────────
+    ✅ Verde = Sucesso
+    ❌ Vermelho = Erro
+
+    ESPERADO:
+    ─────────
+    CRM Webhook Trigger → ✅
+    AI Agent → ✅
+    get_clinic_data → ✅
+    (todos verdes)
+
+6.4 Se recebeu resposta no WhatsApp:
+
+    🎉 PARABÉNS! TUDO ESTÁ FUNCIONANDO!
+
+    O workflow Sofia está operacional:
+    ✓ Mensagem foi recebida
+    ✓ IA processou
+    ✓ Tools foram acionadas
+    ✓ Resposta foi enviada
+
+    ➜ Próximos passos: Teste com mais cenários (perguntas diferentes, etc.)
+
+6.5 Se NÃO recebeu resposta:
+
+    1. Verifique no n8n qual nó está vermelho (❌)
+    2. Clique nele e leia a mensagem de erro
+    3. Volte ao PASSO 5A/5B/5C conforme o erro
+    4. Corrija e teste novamente
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 7: DOCUMENTAR O QUE FOI FEITO (OPCIONAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+Salve estes dados para referência futura:
+
+```
+CONFIGURAÇÃO FINAL:
+───────────────────
+API URL: http://localhost:3000
+Clinic ID (SOFIA_CRM): 1
+Endpoints verificados: ✓
+n8n URL: http://localhost:5678
+PostgreSQL: ✓ Rodando
+Data de conclusão: __________
+Problemas encontrados: ___________________________
+Soluções aplicadas: _______________________________
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+RESUMO DOS PASSOS
+═══════════════════════════════════════════════════════════════════════════════
+
+Passo | O Que Fazer | Tempo
+------|-------------|------
+1     | Verificar pré-requisitos | 5 min
+2     | Descobrir porta da API | 5 min
+3     | Descobrir ID da clínica | 5 min
+4     | Executar teste | 5 min
+5A-D  | Corrigir problema (escolha uma) | 5 min
+6     | Validar no WhatsApp | 5 min
+7     | Documentar | 2 min
+      |                   | ─────
+      | TOTAL | 32 min
+
+═══════════════════════════════════════════════════════════════════════════════
+🆘 FICOU PRESO?
+═══════════════════════════════════════════════════════════════════════════════
+
+Se em qualquer passo algo não funcionar:
+
+1. RELEIA o passo com cuidado
+2. EXECUTE exatamente o comando que está na caixa
+3. COPIE O ERRO completo
+4. PROCURE pela mensagem de erro nesta documentação:
+   - ANALISE_ERRO_URL_INVALIDA.md
+   - DEBUG_WORKFLOW_SOFIA.md
+5. SE NÃO ACHAR, compartilhe:
+   - O comando que executou
+   - O erro exato recebido
+   - A saída completa
+
+═══════════════════════════════════════════════════════════════════════════════
+                            VOCÊ CONSEGUE! 💪
+═══════════════════════════════════════════════════════════════════════════════
+
+Comece pelo PASSO 1 agora!
