@@ -94,7 +94,10 @@ export async function POST(req: Request) {
     // ENCAMINHAMENTO PARA AGENTE DE IA (n8n)
     const settings = (clinic.settings as any) || {};
     if (settings.aiActive && !isFromMe) {
-        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE || "";
+        // Fallback robusto para URL do n8n caso a variável de ambiente esteja ausente
+        const DEFAULT_N8N_URL = "https://lostbaskingshark-n8n.cloudfy.live/webhook/crm-manager-agent-v1";
+        const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE || DEFAULT_N8N_URL;
+        
         if (n8nWebhookUrl) {
            // MODO DE TRANSMISSÃO DUPLA: Produção e Teste
            // Se a URL for de produção (sem o -test), geramos a de teste também
