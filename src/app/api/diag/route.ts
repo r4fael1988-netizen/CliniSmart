@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-// Force Rebuild: 2026-04-14 - Final Stability Deploy
+// Force Rebuild: 2026-04-14T21:45 - Env Vars Sync (WEBHOOK_SECRET + N8N + INSTANCE)
 
 
 export async function GET() {
