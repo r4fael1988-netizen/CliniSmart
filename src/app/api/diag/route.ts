@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-// Force Rebuild: 2026-04-14T21:45 - Env Vars Sync (WEBHOOK_SECRET + N8N + INSTANCE)
+// Force Rebuild: 2026-04-14T22:02 - Clean Env Vars (no trailing newlines)
 
 
 export async function GET() {
