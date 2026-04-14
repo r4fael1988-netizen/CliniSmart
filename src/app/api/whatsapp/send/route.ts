@@ -13,16 +13,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { patientId, textMessage, sentBy = "human" } = await req.json();
+    const { patientId, patientPhone, textMessage, sentBy = "human" } = await req.json();
 
     // Na prática o Endpoint protegerá a rota com auth middleware
-    if (!patientId || !textMessage) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if ((!patientId && !patientPhone) || !textMessage) {
+      return NextResponse.json({ error: "Missing required fields (patientId or patientPhone and textMessage)" }, { status: 400 });
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId }
-    });
+    let patient;
+    if (patientId) {
+       patient = await prisma.patient.findUnique({
+         where: { id: patientId }
+       });
+    }
+
+    if (!patient && patientPhone) {
+       patient = await prisma.patient.findFirst({
+         where: { phone: { contains: patientPhone } }
+       });
+    }
 
     if (!patient) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
