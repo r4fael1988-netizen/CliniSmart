@@ -6,7 +6,10 @@ import prisma from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+    const validSecret = process.env.WEBHOOK_SECRET || "clini-smart-auth-2026";
+    
+    if (authHeader !== `Bearer ${validSecret}`) {
+      console.error("Auth Fail: Received", authHeader, "Expected Bearer", validSecret);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
