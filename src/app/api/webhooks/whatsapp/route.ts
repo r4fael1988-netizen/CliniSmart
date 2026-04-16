@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
     // 6. ENCAMINHAMENTO DUPLO (PRODUÇÃO + TESTE) PARA N8N
     const settings = (clinic.settings as any) || {};
-    if (settings.aiActive) {
+    if (settings.aiActive !== false) {
         const DEFAULT_PROD_URL = "https://lostbaskingshark-n8n.cloudfy.live/webhook/crm-manager-agent-v1";
         const n8nWebhookUrl = process.env.N8N_WEBHOOK_BASE || DEFAULT_PROD_URL;
         
